@@ -157,6 +157,23 @@ AddEventHandler('rs-weather:disasterStopped', function(disasterState)
     StopDisasterEmergency(disasterState)
 end)
 
+-- Auto-detect active disaster on script startup/restart
+Citizen.CreateThread(function()
+    Wait(2000)
+    if Config.UseRsWeatherDisaster and GetResourceState('rs_weather') == 'started' then
+        local successActive, isActive = pcall(function()
+            return exports.rs_weather:IsDisasterActive()
+        end)
+        if successActive and isActive then
+            local _, disasterState = pcall(function()
+                return exports.rs_weather:GetDisasterState()
+            end)
+            dbg("rs_weather active disaster detected on startup! Triggering Emergency Broadcast...")
+            BroadcastDisasterEmergency(disasterState)
+        end
+    end
+end)
+
 -- Time Tracking Thread (Increments elapsed time for all playing TVs per location)
 Citizen.CreateThread(function()
     while true do

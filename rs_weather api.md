@@ -1,6 +1,8 @@
 # RS Weather Developer API
 
-Weather API version: `1.0.0` (resource version `1.9.0`)
+Weather API version: `1.0.0` (resource version `2.1.0`). The disaster
+subsystem versions independently; `GetDisasterCatalog().apiVersion` currently
+reports `2.1.0`.
 
 All authoritative weather control exports must be called from a server script. Client exports only affect the local player. Weather names are case-insensitive and common aliases such as `sunny` and `fog` are normalized.
 
@@ -69,6 +71,7 @@ disaster cleanup.
 ```lua
 local disaster = exports.rs_weather:GetDisasterState()
 local active = exports.rs_weather:IsDisasterActive()
+local catalog = exports.rs_weather:GetDisasterCatalog()
 
 local ok, stateOrError = exports.rs_weather:StartDisaster('tsunami', {
     preset = 'standard',
@@ -79,6 +82,52 @@ if ok then
     exports.rs_weather:StopDisaster('event_finished', stateOrError.runId)
 end
 ```
+
+`GetDisasterCatalog` returns a defensive copy of the shipped disaster catalog:
+`apiVersion`, `defaultPreset`, `types` (id, label, ordered phase names, and
+whether a route is required), `phasePlans`, `presets`, `routes.tornado`, the
+tsunami/tornado visual defaults, and `compatibility.retiredTypes` (currently
+`hurricane`). Use it to build UIs or validation without hard-coding phase or
+preset names.
+
+The full lifecycle control surface mirrors the `rsdisaster` command and the
+Disaster Control panel:
+
+```lua
+-- Arm without starting. Same type/preset/route options as StartDisaster, plus
+-- optional scheduling: startAt (absolute server epoch) or secondsFromNow,
+-- durationSeconds, intensity, seed, and trigger ('manual' or 'txadmin_restart';
+-- the txAdmin trigger is accepted for tsunamis only).
+local ok, stateOrError = exports.rs_weather:ArmDisaster('tornado', {
+    preset = 'standard',
+    routeId = 'sandy_desert',
+    secondsFromNow = 120
+})
+
+exports.rs_weather:DisarmDisaster('event_cancelled')     -- armed runs only
+exports.rs_weather:PauseDisaster(runId)                  -- running -> paused
+exports.rs_weather:ResumeDisaster(runId)                 -- paused -> running
+exports.rs_weather:JumpDisasterPhase('storm_surge', runId)
+exports.rs_weather:CancelDisaster('event_aborted', runId, 30)
+```
+
+All lifecycle exports return `success, stateOrError`. The optional `runId`
+argument on `PauseDisaster`, `ResumeDisaster`, `JumpDisasterPhase`,
+`StopDisaster`, and `CancelDisaster` guards against acting on a different run;
+a mismatch returns `false, 'run_mismatch'`. `StopDisaster` and `CancelDisaster`
+disarm an armed run or begin recovery for an active one; `CancelDisaster`
+additionally accepts a `recoverySeconds` override. Pausing or resuming a
+txAdmin-linked run returns `false, 'txadmin_run_locked'`, and arming a
+non-tsunami with the txAdmin trigger returns
+`false, 'txadmin_only_supports_tsunami'`. Other stable lifecycle errors are
+`disabled`, `disaster_active` (a run is already armed or active), `not_armed`,
+`not_running`, and `not_paused`.
+
+`ControlDisaster(command, payload)` is a single-entry alternative that accepts
+the admin transport commands `arm`, `start`, `disarm`, `pause`, `resume`,
+`jump` (or `phase`), and `cancel`/`stop` with the same option fields; unknown
+commands return `false, 'invalid_command'`. Starting while a txAdmin-armed run
+is pending returns `false, 'txadmin_run_locked'`.
 
 To start the default Grand Senora/Sandy Shores tornado route:
 
@@ -270,6 +319,32 @@ Client resources can inspect the same diagnostics through
 `GetTornadoVisualStatus`, and
 `GetDisasterPtfxRegistryStatus`.
 
+The same local previews driven by those commands are also exported for client
+resources. Each preview affects only the local player, restores its state when
+cleared or replaced, and never changes authoritative disaster state:
+
+```lua
+-- Local flood-water preview; refused while a server disaster is active
+-- (returns false, 'server_disaster_active').
+local ok, result = exports.rs_weather:StartTsunamiWaterPreview({
+    rise = 26.0,          -- metres above the reference sea level
+    durationSeconds = 45
+})
+exports.rs_weather:StopTsunamiWaterPreview()
+
+-- Local coast-splash PTFX preview.
+exports.rs_weather:StartTsunamiPtfxPreview({ distance = 85.0, width = 240.0 })
+exports.rs_weather:StopTsunamiPtfxPreview()
+
+-- Local tornado funnel preview near the player.
+exports.rs_weather:StartTornadoVisualPreview({
+    distance = 135.0,
+    travelDistance = 170.0,
+    durationSeconds = 180.0
+})
+exports.rs_weather:StopTornadoVisualPreview()
+```
+
 For txAdmin, arm a tsunami with the `txadmin_restart` trigger from Disaster
 Control. The controller listens for scheduled-restart, skipped-restart, and
 shutdown events without requiring txAdmin as a hard resource dependency.
@@ -423,4 +498,7 @@ end)
 Control exports return `success, resultOrError`. Common errors are
 `invalid_player`, `invalid_region`, `region_disabled`, `invalid_weather`,
 `invalid_duration`, `invalid_transition`, `invalid_schedule`, `no_regions`,
-`invalid_type`, and `unsupported_disaster_type`.
+`invalid_type`, and `unsupported_disaster_type`. Disaster lifecycle exports may
+additionally return `disabled`, `disaster_active`, `run_mismatch`, `not_armed`,
+`not_running`, `not_paused`, `invalid_phase`, `invalid_command`,
+`txadmin_run_locked`, and `txadmin_only_supports_tsunami`.
