@@ -13,7 +13,7 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        #player-container {
+        #player-wrapper {
             position: absolute;
             top: 0;
             left: 0;
@@ -22,12 +22,12 @@
             overflow: hidden;
             pointer-events: none;
         }
-        #player-container iframe {
+        #player-wrapper iframe, #player {
             position: absolute;
             top: -14%;
             left: -14%;
-            width: 128%;
-            height: 128%;
+            width: 128% !important;
+            height: 128% !important;
             border: 0;
             outline: 0;
             pointer-events: none;
@@ -37,7 +37,10 @@
     </style>
 </head>
 <body>
-    <div id="player-container"></div>
+    <div id="player-wrapper">
+        <div id="player"></div>
+    </div>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="tv.js"></script>
 </body>
 </html>
