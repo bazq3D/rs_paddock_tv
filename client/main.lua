@@ -359,7 +359,6 @@ RegisterNetEvent('rs_paddock_tv:client:showMenu', function(targetTvId, locKey, l
         SetNuiFocus(true, true)
         SendNUIMessage({
             action = 'show',
-            presets = Config.Presets,
             tvList = Config.TVs,
             tvGroups = Config.TVGroups,
             selectedTvId = selectedTvId,

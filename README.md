@@ -1,4 +1,4 @@
-# 🏁 rs_paddock_tv (by bazq)
+# 🏁 rs_paddock_tv
 
 Multi-Screen Independent YouTube DUI Sync TV System created for Paddock MLO maps in FiveM.
 
@@ -24,13 +24,17 @@ Multi-Screen Independent YouTube DUI Sync TV System created for Paddock MLO maps
 ## 📥 Installation
 
 1. Download or clone `rs_paddock_tv` into your FiveM server resources folder:
+
    ```text
    resources/[retrostore]/rs_paddock_tv
    ```
+
 2. Ensure the resource in your `server.cfg`:
+
    ```cfg
    ensure rs_paddock_tv
    ```
+
 3. Configure `config.lua` to match your server settings.
 
 ---
@@ -90,10 +94,12 @@ Config.Commands = {
 ## 🎮 Usage & Controls
 
 ### Target Interaction
+
 - Approach any Paddock TV screen or Remote Control prop in the MLO.
 - Use **ox_target** or **qb-target** to interact and click **"TV Kontrol Paneli / Control TV Panel"**.
 
 ### Chat Commands (Can be toggled via `Config.EnableCommands`)
+
 - `/[menu_cmd] [tvId]` (default: `/tvmenu`) - Open the Master Control Room NUI panel.
 - `/[play_cmd] [tvId] [youtube_url]` (default: `/tvplay`) - Play YouTube video on a specific TV.
 - `/[stop_cmd] [tvId]` (default: `/tvstop`) - Turn off a specific TV.

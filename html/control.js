@@ -6,6 +6,7 @@ var tvListMap = {};
 var tvGroupsMap = {};
 var tvStatesMap = {};
 var localesMap = {};
+var pendingModalCallback = null;
 
 // Locale Helper Function
 function _L(key, defaultText) {
@@ -18,11 +19,18 @@ function _L(key, defaultText) {
 // Tüm DOM Elemanlarına Dil Çevirilerini Uygular
 function applyLocalesToUI() {
     // Header
-    var headerTitle = document.querySelector('.title-wrapper h1');
-    if (headerTitle) headerTitle.innerText = _L('ui_header_title', 'MASTER PADDOCK TV CONTROL');
+    var headerTitle = document.getElementById('header-title');
+    if (headerTitle) headerTitle.innerText = _L('ui_header_title', 'PADDOCK BAR TV MATRIX');
 
-    var headerSub = document.querySelector('.title-wrapper .subtitle');
-    if (headerSub) headerSub.innerText = _L('ui_header_subtitle', 'BROADCAST CONTROL ROOM // 7-SCREEN MATRIX STATION');
+    var headerSub = document.getElementById('header-subtitle');
+    if (headerSub) headerSub.innerText = _L('ui_header_subtitle', 'RETRO STORE // 7-SCREEN INDEPENDENT DUI CONTROL');
+
+    // Section Badges
+    var badgeLeft = document.getElementById('badge-left-bar');
+    if (badgeLeft) badgeLeft.innerHTML = `<i class="fa-solid fa-desktop"></i> ${_L('ui_left_bar_badge', 'LEFT BAR (TV 1-4)')}`;
+
+    var badgeRight = document.getElementById('badge-right-bar');
+    if (badgeRight) badgeRight.innerHTML = `<i class="fa-solid fa-desktop"></i> ${_L('ui_right_bar_badge', 'RIGHT BAR (TV 5-7)')}`;
 
     // Scope Buttons
     var scopeAll = document.getElementById('scope-btn-all');
@@ -34,55 +42,103 @@ function applyLocalesToUI() {
     var scopeG2 = document.getElementById('scope-btn-g2');
     if (scopeG2) scopeG2.innerHTML = `<i class="fa-solid fa-layer-group"></i> ${_L('ui_scope_g2', 'RIGHT BAR (TV 5-7)')}`;
 
-    // Bar Section Badges
-    var sectionBadges = document.querySelectorAll('.section-badge');
-    if (sectionBadges && sectionBadges.length >= 2) {
-        sectionBadges[0].innerHTML = `<i class="fa-solid fa-desktop"></i> ${_L('ui_left_bar_badge', 'LEFT BAR (TV 1-4)')}`;
-        sectionBadges[1].innerHTML = `<i class="fa-solid fa-desktop"></i> ${_L('ui_right_bar_badge', 'RIGHT BAR (TV 5-7)')}`;
-    }
-
     // Input & Actions
-    var customUrlLabel = document.querySelector('.custom-url-card label');
+    var customUrlLabel = document.getElementById('custom-url-label');
     if (customUrlLabel) customUrlLabel.innerHTML = `<i class="fa-brands fa-youtube"></i> ${_L('ui_custom_url', 'YOUTUBE STREAM URL / LINK')}`;
 
-    var playCustomBtn = document.getElementById('play-custom-btn');
-    if (playCustomBtn) playCustomBtn.innerHTML = `<i class="fa-solid fa-play"></i> ${_L('ui_play', 'PLAY')}`;
+    var customUrlInput = document.getElementById('custom-url-input');
+    if (customUrlInput) customUrlInput.placeholder = _L('ui_url_placeholder', 'https://www.youtube.com/watch?v=...');
 
-    var actionPause = document.getElementById('action-pause');
-    if (actionPause) actionPause.innerHTML = `<i class="fa-solid fa-pause"></i> ${_L('ui_pause', 'PAUSE')}`;
+    var btnPlayText = document.getElementById('btn-play-text');
+    if (btnPlayText) btnPlayText.innerText = _L('ui_play', 'PLAY');
 
-    var actionResume = document.getElementById('action-resume');
-    if (actionResume) actionResume.innerHTML = `<i class="fa-solid fa-play"></i> ${_L('ui_resume', 'RESUME')}`;
+    var btnPauseText = document.getElementById('btn-pause-text');
+    if (btnPauseText) btnPauseText.innerText = _L('ui_pause', 'PAUSE');
 
-    var actionStop = document.getElementById('action-stop');
-    if (actionStop) actionStop.innerHTML = `<i class="fa-solid fa-power-off"></i> ${_L('ui_stop', 'STOP TV')}`;
+    var btnResumeText = document.getElementById('btn-resume-text');
+    if (btnResumeText) btnResumeText.innerText = _L('ui_resume', 'RESUME');
+
+    var btnStopText = document.getElementById('btn-stop-text');
+    if (btnStopText) btnStopText.innerText = _L('ui_stop', 'STOP TV');
+
+    var noFeedText = document.getElementById('no-feed-text');
+    if (noFeedText) noFeedText.innerText = _L('ui_no_feed', 'NO ACTIVE VIDEO FEED');
 
     // Side Cards
-    var scopeTitle = document.querySelector('.scope-card h4');
-    if (scopeTitle) scopeTitle.innerHTML = `<i class="fa-solid fa-bullseye"></i> ${_L('ui_scope_title', 'BROADCAST TARGET SCOPE')}`;
+    var scopeCardTitle = document.getElementById('scope-card-title');
+    if (scopeCardTitle) scopeCardTitle.innerHTML = `<i class="fa-solid fa-bullseye"></i> ${_L('ui_scope_title', 'BROADCAST TARGET SCOPE')}`;
 
-    var detailsTitle = document.querySelector('.details-card h4');
-    if (detailsTitle) detailsTitle.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${_L('ui_interior_details', 'INTERIOR DETAILS')}`;
+    var detailsCardTitle = document.getElementById('details-card-title');
+    if (detailsCardTitle) detailsCardTitle.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${_L('ui_interior_details', 'INTERIOR DETAILS')}`;
 
-    var detailRowLabels = document.querySelectorAll('.detail-row .label');
-    if (detailRowLabels && detailRowLabels.length >= 2) {
-        detailRowLabels[0].innerText = _L('ui_location', 'LOCATION');
-        detailRowLabels[1].innerText = _L('ui_coordinates', 'COORDINATES');
-    }
+    var labelLocation = document.getElementById('detail-label-location');
+    if (labelLocation) labelLocation.innerText = _L('ui_location', 'LOCATION');
 
-    var volumeTitle = document.querySelector('.volume-card h4');
-    if (volumeTitle) volumeTitle.innerHTML = `<i class="fa-solid fa-volume-high"></i> ${_L('ui_volume_control', 'VOLUME CONTROL')}`;
+    var labelCoords = document.getElementById('detail-label-coords');
+    if (labelCoords) labelCoords.innerText = _L('ui_coordinates', 'COORDINATES');
+
+    var volumeCardTitle = document.getElementById('volume-card-title');
+    if (volumeCardTitle) volumeCardTitle.innerHTML = `<i class="fa-solid fa-volume-high"></i> ${_L('ui_volume_control', 'VOLUME CONTROL')}`;
+
+    // Modal Locales
+    var modalTitle = document.getElementById('modal-title');
+    if (modalTitle) modalTitle.innerText = _L('ui_confirm_title', 'BROADCAST OVERWRITE CONFIRMATION');
+
+    var modalDesc = document.getElementById('modal-desc');
+    if (modalDesc) modalDesc.innerText = _L('ui_confirm_desc', 'An active video stream is currently playing. Are you sure you want to apply this action?');
+
+    var modalConfirmBtn = document.getElementById('modal-btn-confirm');
+    if (modalConfirmBtn) modalConfirmBtn.innerText = _L('ui_confirm_btn', 'CONFIRM ACTION');
+
+    var modalCancelBtn = document.getElementById('modal-btn-cancel');
+    if (modalCancelBtn) modalCancelBtn.innerText = _L('ui_cancel_btn', 'CANCEL');
 }
+
+// Confirmation Modal Dialog Helper Functions
+function showConfirmationModal(titleKey, descKey, onConfirm) {
+    pendingModalCallback = onConfirm;
+    
+    var modalTitle = document.getElementById('modal-title');
+    if (modalTitle) modalTitle.innerText = _L(titleKey || 'ui_confirm_title', 'BROADCAST OVERWRITE CONFIRMATION');
+
+    var modalDesc = document.getElementById('modal-desc');
+    if (modalDesc) modalDesc.innerText = _L(descKey || 'ui_confirm_desc', 'An active video stream is currently playing. Are you sure you want to apply this action?');
+
+    var modalOverlay = document.getElementById('confirm-modal');
+    if (modalOverlay) modalOverlay.style.display = 'flex';
+}
+
+function hideConfirmationModal() {
+    pendingModalCallback = null;
+    var modalOverlay = document.getElementById('confirm-modal');
+    if (modalOverlay) modalOverlay.style.display = 'none';
+}
+
+document.getElementById('modal-btn-cancel').addEventListener('click', hideConfirmationModal);
+document.getElementById('modal-btn-confirm').addEventListener('click', function() {
+    if (typeof pendingModalCallback === 'function') {
+        var cb = pendingModalCallback;
+        hideConfirmationModal();
+        cb();
+    } else {
+        hideConfirmationModal();
+    }
+});
 
 // Esc ve Kapat Butonu Dinleyicileri
 document.getElementById('close-btn').addEventListener('click', closeUI);
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape' || event.key === 'Esc') {
-        closeUI();
+        if (document.getElementById('confirm-modal').style.display === 'flex') {
+            hideConfirmationModal();
+        } else {
+            closeUI();
+        }
     }
 });
 
 function closeUI() {
+    hideConfirmationModal();
     document.getElementById('ui-wrapper').style.display = 'none';
     if (typeof GetParentResourceName !== 'undefined') {
         fetch(`https://${GetParentResourceName()}/close`, {
@@ -95,22 +151,50 @@ function closeUI() {
     }
 }
 
-// Scope Hızlı Eylem Butonları
+// Scope Hızlı Eylem Butonları (Sync All & Group Controls)
 document.getElementById('scope-btn-all').addEventListener('click', function() {
-    setScope('all');
+    handleScopeChange('all');
 });
 document.getElementById('scope-btn-g1').addEventListener('click', function() {
-    setScope('group', 1);
+    handleScopeChange('group', 1);
 });
 document.getElementById('scope-btn-g2').addEventListener('click', function() {
-    setScope('group', 2);
+    handleScopeChange('group', 2);
 });
 
-function setScope(scope, groupId) {
-    currentScope = scope;
-    if (groupId) currentGroupId = groupId;
-    updateScopeButtonsUI();
-    updateUIStateForCurrentScope();
+function handleScopeChange(scope, groupId) {
+    var activeState = tvStatesMap[currentTvId];
+    var inputVal = document.getElementById('custom-url-input') ? document.getElementById('custom-url-input').value.trim() : "";
+    var activeUrl = (activeState && activeState.url && activeState.url !== "") ? activeState.url : inputVal;
+
+    var isAnyTvPlaying = false;
+    for (var tvId in tvStatesMap) {
+        if (tvStatesMap[tvId] && tvStatesMap[tvId].playing && tvStatesMap[tvId].url !== "") {
+            isAnyTvPlaying = true;
+            break;
+        }
+    }
+
+    var doApplyScopeSync = function() {
+        currentScope = scope;
+        if (groupId) currentGroupId = groupId;
+        updateScopeButtonsUI();
+
+        if (activeUrl && activeUrl !== "") {
+            updateTVState({
+                action: 'play',
+                url: activeUrl
+            });
+        } else {
+            updateUIStateForCurrentScope();
+        }
+    };
+
+    if (isAnyTvPlaying || (activeUrl && activeUrl !== "")) {
+        showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doApplyScopeSync);
+    } else {
+        doApplyScopeSync();
+    }
 }
 
 function updateScopeButtonsUI() {
@@ -351,12 +435,15 @@ function updateUIStateForCurrentScope() {
     if (isLive || isPaused) {
         var videoId = getYoutubeId(state.url);
         if (videoId) {
-            var embedUrl = "https://www.youtube-nocookie.com/embed/" + videoId + "?autoplay=1&mute=1&controls=0&enablejsapi=1";
-            if (iframe.src !== embedUrl) {
-                iframe.src = embedUrl;
+            var streamImg = "https://img.youtube.com/vi/" + videoId + "/hqdefault.jpg";
+            if (placeholder) {
+                placeholder.innerHTML = `
+                    <img src="${streamImg}" class="monitor-stream-thumb" alt="Broadcast Stream Feed">
+                    <div class="monitor-scanlines"></div>
+                `;
+                placeholder.style.display = 'flex';
             }
-            iframe.style.display = 'block';
-            if (placeholder) placeholder.style.display = 'none';
+            if (iframe) iframe.style.display = 'none';
         }
         if (input && state.url) {
             input.value = state.url;
@@ -374,9 +461,17 @@ function updateUIStateForCurrentScope() {
             document.getElementById('action-resume').style.display = 'flex';
         }
     } else {
-        iframe.src = "about:blank";
-        iframe.style.display = 'none';
-        if (placeholder) placeholder.style.display = 'flex';
+        if (iframe) {
+            iframe.src = "about:blank";
+            iframe.style.display = 'none';
+        }
+        if (placeholder) {
+            placeholder.innerHTML = `
+                <i class="fa-solid fa-video-slash" style="font-size:28px;"></i>
+                <span id="no-feed-text">${_L('ui_no_feed', 'NO ACTIVE VIDEO FEED')}</span>
+            `;
+            placeholder.style.display = 'flex';
+        }
         if (input) input.value = "";
 
         badge.className = "monitor-status-badge badge-off";
@@ -397,10 +492,21 @@ document.getElementById('play-custom-btn').addEventListener('click', function() 
     var url = document.getElementById('custom-url-input').value.trim();
     if (url === '') return;
     
-    updateTVState({
-        action: 'play',
-        url: url
-    });
+    var state = tvStatesMap[currentTvId];
+    var isLive = state && state.playing && state.url && state.url !== "";
+
+    var doPlay = function() {
+        updateTVState({
+            action: 'play',
+            url: url
+        });
+    };
+
+    if (isLive) {
+        showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doPlay);
+    } else {
+        doPlay();
+    }
 });
 
 document.getElementById('action-pause').addEventListener('click', function() {
@@ -412,8 +518,19 @@ document.getElementById('action-resume').addEventListener('click', function() {
 });
 
 document.getElementById('action-stop').addEventListener('click', function() {
-    document.getElementById('custom-url-input').value = "";
-    updateTVState({ action: 'stop' });
+    var state = tvStatesMap[currentTvId];
+    var isLive = state && state.playing && state.url && state.url !== "";
+
+    var doStop = function() {
+        document.getElementById('custom-url-input').value = "";
+        updateTVState({ action: 'stop' });
+    };
+
+    if (isLive) {
+        showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doStop);
+    } else {
+        doStop();
+    }
 });
 
 // Ses Ayarı (Throttled)

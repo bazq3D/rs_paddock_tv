@@ -93,43 +93,7 @@ Config.DuiWidth = 1280                  -- DUI resolution width
 Config.DuiHeight = 720                  -- DUI resolution height
 
 -- =============================================================================
--- 5. STREAM PRESETS LIST (PRE-LOADED VIDEOS)
--- =============================================================================
-Config.Presets = {
-    {
-        id = 'preset_f1',
-        title = 'Formula 1 Live',
-        desc = 'F1 Official Broadcast & Highlights',
-        url = 'https://www.youtube.com/watch?v=kYJv8y_3Wb8'
-    },
-    {
-        id = 'preset_gt',
-        title = 'GT World Challenge',
-        desc = 'Live GT3 & GT4 Race Streams',
-        url = 'https://www.youtube.com/watch?v=F3t2pXnB32s'
-    },
-    {
-        id = 'preset_lofi',
-        title = 'Paddock Lo-Fi',
-        desc = 'Chill radio for paddock garage',
-        url = 'https://www.youtube.com/watch?v=jfKfPfyJRdk'
-    },
-    {
-        id = 'preset_supercar',
-        title = 'Supercars Sound',
-        desc = 'Pure exhaust sounds compilation',
-        url = 'https://www.youtube.com/watch?v=sO7z9x4h3o0'
-    },
-    {
-        id = 'preset_drift',
-        title = 'Drift Championship',
-        desc = 'Drift Masters Highlights',
-        url = 'https://www.youtube.com/watch?v=1F3d1wS4f5I'
-    }
-}
-
--- =============================================================================
--- 6. PADDOCK MAP LOCATIONS (5 MLO COORDINATES)
+-- 5. PADDOCK MAP LOCATIONS (5 MLO COORDINATES)
 -- =============================================================================
 Config.Locations = {
     ["rs_paddock_def"] = {

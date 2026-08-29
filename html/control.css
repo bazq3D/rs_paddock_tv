@@ -386,11 +386,16 @@ body {
     overflow: hidden;
 }
 
-.panel-main, .panel-side {
+.panel-main {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    height: 100%;
+}
+
+.panel-side {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 /* Master Program Monitor Frame */
@@ -423,7 +428,7 @@ body {
 
 .monitor-frame {
     width: 100%;
-    height: 320px;
+    height: 265px;
     background-color: #000000;
     border: 1.5px solid var(--border-gold);
     border-radius: 8px;
@@ -448,18 +453,42 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    background-color: var(--bg-input);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     color: var(--text-muted);
-    font-family: var(--font-heading);
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 1px;
-    background: radial-gradient(circle, #14141e 0%, #000000 100%);
+    letter-spacing: 0.5px;
     z-index: 1;
+    overflow: hidden;
+}
+
+.monitor-stream-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    filter: brightness(0.95) contrast(1.05);
+}
+
+.monitor-scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.5;
 }
 
 .monitor-overlay-placeholder i {
@@ -582,6 +611,53 @@ body {
     background-color: rgba(239, 68, 68, 0.15);
     border-color: var(--danger);
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Preset Streams Card & Grid */
+.presets-card {
+    margin-top: 10px;
+    padding: 12px 16px;
+}
+
+.presets-header {
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--accent-gold);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.presets-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.preset-chip {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-white);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.preset-chip:hover {
+    background-color: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(210, 183, 141, 0.18);
 }
 
 /* Right Side Panel - Target Scope & Controls */
@@ -723,3 +799,69 @@ body {
 }
 
 .text-gold { color: var(--accent-gold); }
+
+/* Modal Confirmation Overlay & Card */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-card {
+    width: 440px;
+    max-width: 90vw;
+    background-color: #121218;
+    border: 1px solid var(--border-gold);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(210, 183, 141, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--warning);
+}
+
+.modal-header i {
+    font-size: 22px;
+}
+
+.modal-header h3 {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--text-white);
+}
+
+.modal-body p {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-gray);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}

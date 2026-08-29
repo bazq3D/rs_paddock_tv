@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,8 +21,8 @@
                         <img src="logo.webp" alt="Retro Store Paddock Logo" class="header-logo-img">
                     </div>
                     <div class="title-wrapper">
-                        <h1>PADDOCK BAR TV MATRIX</h1>
-                        <p class="subtitle">RETRO STORE // 7-SCREEN INDEPENDENT DUI CONTROL</p>
+                        <h1 id="header-title">PADDOCK BAR TV MATRIX</h1>
+                        <p class="subtitle" id="header-subtitle">RETRO STORE // 7-SCREEN INDEPENDENT DUI CONTROL</p>
                     </div>
                 </div>
                 <div class="header-right">
@@ -37,7 +37,7 @@
                 <div class="matrix-sections">
                     <!-- Sol Bar Section (4 TVs) -->
                     <div class="bar-section-left">
-                        <div class="section-badge"><i class="fa-solid fa-desktop"></i> SOL BAR (TV 1-4)</div>
+                        <div class="section-badge" id="badge-left-bar"><i class="fa-solid fa-desktop"></i> LEFT BAR (TV 1-4)</div>
                         <div class="cards-row" id="cards-row-left">
                             <!-- Dynamic Cards TV #1, #2, #3, #4 -->
                         </div>
@@ -49,7 +49,7 @@
 
                     <!-- Sağ Bar Section (3 TVs) -->
                     <div class="bar-section-right">
-                        <div class="section-badge"><i class="fa-solid fa-desktop"></i> SAĞ BAR (TV 5-7)</div>
+                        <div class="section-badge" id="badge-right-bar"><i class="fa-solid fa-desktop"></i> RIGHT BAR (TV 5-7)</div>
                         <div class="cards-row" id="cards-row-right">
                             <!-- Dynamic Cards TV #5, #6, #7 -->
                         </div>
@@ -74,27 +74,27 @@
                             <iframe id="preview-iframe" src="about:blank" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="no-referrer"></iframe>
                             <div class="monitor-overlay-placeholder" id="preview-placeholder">
                                 <i class="fa-solid fa-video-slash"></i>
-                                <span>NO ACTIVE VIDEO FEED</span>
+                                <span id="no-feed-text">NO ACTIVE VIDEO FEED</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Direct YouTube Link Input & Clean Action Controls -->
                     <div class="card custom-url-card">
-                        <label for="custom-url-input"><i class="fa-brands fa-youtube"></i> YOUTUBE STREAM URL / LINK</label>
+                        <label for="custom-url-input" id="custom-url-label"><i class="fa-brands fa-youtube"></i> YOUTUBE STREAM URL / LINK</label>
                         <div class="input-group">
                             <input type="text" id="custom-url-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
                             <button id="play-custom-btn" class="btn-primary">
-                                <i class="fa-solid fa-play"></i> PLAY
+                                <i class="fa-solid fa-play"></i> <span id="btn-play-text">PLAY</span>
                             </button>
                             <button id="action-pause" class="btn-action btn-warning">
-                                <i class="fa-solid fa-pause"></i> PAUSE
+                                <i class="fa-solid fa-pause"></i> <span id="btn-pause-text">PAUSE</span>
                             </button>
                             <button id="action-resume" class="btn-action btn-success" style="display: none;">
-                                <i class="fa-solid fa-play"></i> RESUME
+                                <i class="fa-solid fa-play"></i> <span id="btn-resume-text">RESUME</span>
                             </button>
                             <button id="action-stop" class="btn-action btn-danger">
-                                <i class="fa-solid fa-power-off"></i> STOP TV
+                                <i class="fa-solid fa-power-off"></i> <span id="btn-stop-text">STOP TV</span>
                             </button>
                         </div>
                     </div>
@@ -104,25 +104,25 @@
                 <section class="panel-side">
                     <!-- Scope Target Selection Card -->
                     <div class="card scope-card">
-                        <h4><i class="fa-solid fa-bullseye"></i> BROADCAST TARGET SCOPE</h4>
+                        <h4 id="scope-card-title"><i class="fa-solid fa-bullseye"></i> BROADCAST TARGET SCOPE</h4>
                         <div class="scope-options">
                             <button id="scope-btn-all" class="scope-btn">
-                                <i class="fa-solid fa-globe"></i> GLOBAL (ALL 7 TVs)
+                                <i class="fa-solid fa-globe"></i> SYNC ALL 7 TVs
                             </button>
                             <button id="scope-btn-g1" class="scope-btn">
-                                <i class="fa-solid fa-layer-group"></i> SOL BAR (TV 1-4)
+                                <i class="fa-solid fa-layer-group"></i> LEFT BAR (TV 1-4)
                             </button>
                             <button id="scope-btn-g2" class="scope-btn">
-                                <i class="fa-solid fa-layer-group"></i> SAĞ BAR (TV 5-7)
+                                <i class="fa-solid fa-layer-group"></i> RIGHT BAR (TV 5-7)
                             </button>
                         </div>
-                        <div class="scope-info-tag" id="scope-tag">TARGET: GLOBAL ALL 7 TVs</div>
+                        <div class="scope-info-tag" id="scope-tag">TARGET: SYNC ALL 7 TVs</div>
                     </div>
 
                     <!-- Volume Adjust Card -->
                     <div class="card volume-card">
                         <div class="card-header">
-                            <h4><i class="fa-solid fa-volume-high"></i> VOLUME CONTROL</h4>
+                            <h4 id="volume-card-title"><i class="fa-solid fa-volume-high"></i> VOLUME CONTROL</h4>
                             <span id="volume-val" class="volume-badge">30%</span>
                         </div>
                         <div class="range-slider">
@@ -134,20 +134,37 @@
 
                     <!-- Interior Details Card -->
                     <div class="card details-card">
-                        <h4><i class="fa-solid fa-location-dot"></i> INTERIOR DETAILS</h4>
+                        <h4 id="details-card-title"><i class="fa-solid fa-location-dot"></i> INTERIOR DETAILS</h4>
                         <div class="details-list">
                             <div class="detail-row">
-                                <span class="label">LOCATION</span>
+                                <span class="label" id="detail-label-location">LOCATION</span>
                                 <span id="active-interior" class="value text-gold">MLO Paddock</span>
                             </div>
                             <div class="detail-row">
-                                <span class="label">COORDINATES</span>
+                                <span class="label" id="detail-label-coords">COORDINATES</span>
                                 <span id="active-coords" class="value">-2202.1, -392.1, 15.0</span>
                             </div>
                         </div>
                     </div>
                 </section>
             </main>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog Modal Overlay -->
+    <div class="modal-overlay" id="confirm-modal" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-header">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <h3 id="modal-title">BROADCAST OVERWRITE CONFIRMATION</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-desc">An active video stream is currently playing. Are you sure you want to apply this action?</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-action" id="modal-btn-cancel">CANCEL</button>
+                <button class="btn-primary" id="modal-btn-confirm">CONFIRM ACTION</button>
+            </div>
         </div>
     </div>
 
