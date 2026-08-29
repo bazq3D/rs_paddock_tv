@@ -123,6 +123,7 @@ Config.Commands = {
 Config.InteractDistance = 6.0           -- Target interaction distance (meters)
 Config.MaxRenderDistance = 25.0         -- Audio cutoff distance (meters)
 Config.DefaultVolume = 30               -- Initial volume level (0 to 100)
+Config.MuteDuplicateAudio = true        -- Automatically mute duplicate audio when multiple TVs play the same stream (prevents audio echo/overlap)
 Config.DefaultUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 Config.DuiWidth = 1280                  -- DUI resolution width
 Config.DuiHeight = 720                  -- DUI resolution height

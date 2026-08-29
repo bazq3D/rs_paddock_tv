@@ -248,6 +248,21 @@ Citizen.CreateThread(function()
             SyncTvEntitySets(closestLocKey, closestLoc)
 
             local locTvStates = tvStates[closestLocKey] or {}
+
+            -- Identify primary audio master TV for each active stream URL (prevents audio overlap/echo)
+            local activeMasterTvs = {}
+            if Config.MuteDuplicateAudio ~= false then
+                for tvId = 1, 7 do
+                    local state = locTvStates[tvId]
+                    if state and state.playing and state.url ~= "" then
+                        local urlKey = state.url
+                        if not activeMasterTvs[urlKey] then
+                            activeMasterTvs[urlKey] = tvId
+                        end
+                    end
+                end
+            end
+
             for tvId, tvConfig in pairs(Config.TVs) do
                 local state = locTvStates[tvId]
                 local instance = duiInstances[tvId]
@@ -255,8 +270,15 @@ Citizen.CreateThread(function()
                 if state and state.playing and state.url ~= "" then
                     ReplaceTVTexture(tvId, state.url)
                     
+                    local isMasterForAudio = true
+                    if Config.MuteDuplicateAudio ~= false and activeMasterTvs[state.url] then
+                        if activeMasterTvs[state.url] ~= tvId then
+                            isMasterForAudio = false
+                        end
+                    end
+
                     local volPercent = 0
-                    if distance <= Config.MaxRenderDistance then
+                    if isMasterForAudio and distance <= Config.MaxRenderDistance then
                         local progress = distance / Config.MaxRenderDistance
                         local volumeMultiplier = 1.0 - progress
                         volPercent = math.floor(state.volume * volumeMultiplier)
