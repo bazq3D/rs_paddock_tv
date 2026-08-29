@@ -81,7 +81,7 @@ local function GetOrCreateTvDui(tvId, streamUrl)
     local targetType = isWeatherChannel and "weather_channel" or "youtube"
 
     if duiInstances[tvId] then
-        if duiInstances[tvId].type == targetType then
+        if streamUrl == nil or duiInstances[tvId].type == targetType then
             return duiInstances[tvId]
         else
             if duiInstances[tvId].duiObject then
@@ -127,7 +127,7 @@ end
 
 -- Send DUI Message with retry mechanism for newly created browser instances
 local function SendDuiAction(tvId, actionData)
-    local instance = GetOrCreateTvDui(tvId, actionData.url)
+    local instance = GetOrCreateTvDui(tvId, actionData and actionData.url)
     if not instance or not instance.duiObject then return end
 
     if instance.type == "weather_channel" then
@@ -165,8 +165,8 @@ RegisterNetEvent('rs_paddock_tv:client:weatherChannelData', function(data)
 end)
 
 -- Replace target texture with DUI runtime texture
-local function ReplaceTVTexture(tvId)
-    local instance = GetOrCreateTvDui(tvId)
+local function ReplaceTVTexture(tvId, streamUrl)
+    local instance = GetOrCreateTvDui(tvId, streamUrl)
     if not instance or instance.isReplaced then return end
 
     local tvConfig = Config.TVs[tvId]
@@ -253,7 +253,7 @@ Citizen.CreateThread(function()
                 local instance = duiInstances[tvId]
 
                 if state and state.playing and state.url ~= "" then
-                    ReplaceTVTexture(tvId)
+                    ReplaceTVTexture(tvId, state.url)
                     
                     local volPercent = 0
                     if distance <= Config.MaxRenderDistance then
