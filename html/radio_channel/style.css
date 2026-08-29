@@ -177,29 +177,11 @@ html, body {
     gap: 8px;
 }
 
-.brand-logo {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 16px;
-    font-weight: 900;
-    color: #ffffff;
-    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-    width: 24px;
-    height: 24px;
-    border-radius: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.widget-pill {
-    background: #141722;
-    border: 1px solid #202436;
-    color: #94a3b8;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    padding: 2px 8px;
-    border-radius: 10px;
+.brand-logo-img {
+    height: 26px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
 }
 
 .widget-icons {
