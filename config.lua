@@ -15,6 +15,18 @@ Config.DiscordBotName = "Paddock TV"
 Config.DiscordBotAvatar = "https://i.imgur.com/8N69c45.png"
 
 -- =============================================================================
+-- 2.1 RETRO STORE RADIO INTEGRATION (rs_radio)
+-- =============================================================================
+Config.UseRsRadio = true                -- Auto-create static emitters for Paddock TV locations via rs_radio if started
+Config.RsRadio = {
+    stationId = "south",                 -- Radio station ID configured on your rs_radio server resource
+    radius = 25.0,                       -- Audio falloff radius (5.0 .. 250.0)
+    volume = 0.4,                        -- Radio volume (0.0 .. 1.0)
+    interiorOnly = true,                 -- Muffle audio outside interior
+    enabled = true                       -- Start switched on (default: true)
+}
+
+-- =============================================================================
 -- 3. PERMISSIONS & ACCESS CONTROL
 -- =============================================================================
 Config.Permissions = {

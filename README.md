@@ -17,6 +17,7 @@ Multi-Screen Independent YouTube DUI Sync TV System created for Paddock MLO maps
 - **Universal Framework Support:** Built-in auto-detection for `qb-core`, `qbox`, `es_extended`, `ox_core`, and `devix-core`.
 - **Full Inventory Integration:** Auto-detects `ox_inventory`, `qb-inventory`, `esx`, `devix-inventory`, and custom items.
 - **Target Systems:** Auto-detects `ox_target` and `qb-target`.
+- **Retro Store Radio Integration (`rs_radio`):** Native compatibility with `rs_radio`. Automatically registers static audio emitters for all Paddock locations.
 - **Escrow-Ready & Open Source:** Full source code unlocked. Detailed `config.lua` options for permissions (Admin, Job, Gang, Item, Whitelist, MatchMode).
 
 ---

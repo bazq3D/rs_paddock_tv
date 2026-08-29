@@ -23,6 +23,53 @@ local function InitTVStates()
 end
 InitTVStates()
 
+-- =============================================================================
+-- RETRO STORE RADIO (rs_radio) INTEGRATION
+-- =============================================================================
+local rsRadioEmitters = {}
+
+local function SetupRsRadioEmitters()
+    if not Config.UseRsRadio or GetResourceState('rs_radio') ~= 'started' then
+        return
+    end
+
+    dbg("Initializing rs_radio static emitters for paddock locations...")
+    for locKey, loc in pairs(Config.Locations) do
+        local emitterSpec = {
+            label = ("paddock_tv_%s"):format(locKey),
+            pos = loc.coords,
+            stationId = (Config.RsRadio and Config.RsRadio.stationId) or "south",
+            radius = (Config.RsRadio and Config.RsRadio.radius) or 25.0,
+            volume = (Config.RsRadio and Config.RsRadio.volume) or 0.4,
+            interiorOnly = (Config.RsRadio and Config.RsRadio.interiorOnly ~= nil) and Config.RsRadio.interiorOnly or true,
+            enabled = (Config.RsRadio and Config.RsRadio.enabled ~= nil) and Config.RsRadio.enabled or true
+        }
+
+        local success, idOrErr = pcall(function()
+            return exports.rs_radio:createStaticEmitter(emitterSpec)
+        end)
+
+        if success and idOrErr and type(idOrErr) == "number" then
+            rsRadioEmitters[locKey] = idOrErr
+            dbg(("Successfully created rs_radio static emitter #%d for location [%s]"):format(idOrErr, locKey))
+        else
+            dbg(("Could not create rs_radio static emitter for location [%s]: %s"):format(locKey, tostring(idOrErr)))
+        end
+    end
+end
+
+Citizen.CreateThread(function()
+    Wait(1500)
+    SetupRsRadioEmitters()
+end)
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName == 'rs_radio' then
+        Wait(1000)
+        SetupRsRadioEmitters()
+    end
+end)
+
 -- Time Tracking Thread (Increments elapsed time for all playing TVs per location)
 Citizen.CreateThread(function()
     while true do
