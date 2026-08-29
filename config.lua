@@ -50,6 +50,12 @@ Config.WeatherChannelSettings = {
 }
 
 -- =============================================================================
+-- 2.4 RETRO STORE RADIO STATION VISUALIZER TV INTEGRATION
+-- =============================================================================
+Config.UseRsRadioChannel = true        -- Enable RS Radio Animated Visualizer Channel on Paddock TVs
+Config.RsRadioTvId = 7                 -- Default TV ID to play RS Radio Visualizer Channel when idle (1..7, default: 7)
+
+-- =============================================================================
 -- 3. PERMISSIONS & ACCESS CONTROL
 -- =============================================================================
 Config.Permissions = {

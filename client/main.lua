@@ -89,6 +89,8 @@ local function GetStreamKey(streamUrl, streamTime)
     if not streamUrl or streamUrl == "" then return nil end
     if streamUrl == "weather_channel" then
         return "weather_channel"
+    elseif streamUrl == "rs_radio_channel" then
+        return "rs_radio_channel"
     end
 
     local videoId = ExtractYoutubeId(streamUrl)
@@ -106,16 +108,28 @@ local function GetOrCreateSharedDui(streamKey, streamUrl, streamTime)
     end
 
     local isWeatherChannel = (streamUrl == "weather_channel")
+    local isRadioChannel = (streamUrl == "rs_radio_channel")
     local resourceName = GetCurrentResourceName()
-    local duiUrl = isWeatherChannel 
-        and ("https://cfx-nui-%s/html/weather_channel/index.html"):format(resourceName)
-        or ("https://cfx-nui-%s/html/tv.html?resource=%s"):format(resourceName, resourceName)
+
+    local duiUrl = ""
+    local streamType = "youtube"
+
+    if isWeatherChannel then
+        duiUrl = ("https://cfx-nui-%s/html/weather_channel/index.html"):format(resourceName)
+        streamType = "weather_channel"
+    elseif isRadioChannel then
+        duiUrl = ("https://cfx-nui-%s/html/radio_channel/index.html"):format(resourceName)
+        streamType = "rs_radio_channel"
+    else
+        duiUrl = ("https://cfx-nui-%s/html/tv.html?resource=%s"):format(resourceName, resourceName)
+        streamType = "youtube"
+    end
 
     local safeKey = string.gsub(streamKey, "[^%w_]", "_")
     local runtimeTxdName = ("paddock_tv_shared_txd_%s"):format(safeKey)
     local runtimeTxnName = ("paddock_tv_shared_txn_%s"):format(safeKey)
 
-    dbg(("Creating Shared DUI Instance [Key: %s | Type: %s]: %s"):format(streamKey, isWeatherChannel and "weather_channel" or "youtube", duiUrl))
+    dbg(("Creating Shared DUI Instance [Key: %s | Type: %s]: %s"):format(streamKey, streamType, duiUrl))
 
     local duiObject = CreateDui(duiUrl, Config.DuiWidth, Config.DuiHeight)
     local duiHandle = GetDuiHandle(duiObject)
@@ -125,7 +139,7 @@ local function GetOrCreateSharedDui(streamKey, streamUrl, streamTime)
 
     sharedDuis[streamKey] = {
         key = streamKey,
-        type = isWeatherChannel and "weather_channel" or "youtube",
+        type = streamType,
         duiObject = duiObject,
         duiHandle = duiHandle,
         txd = txd,
@@ -479,6 +493,12 @@ end)
 -- NUI Update State Callback
 RegisterNUICallback('updateState', function(data, cb)
     TriggerServerEvent('rs_paddock_tv:server:updateState', data)
+    cb('ok')
+end)
+
+-- NUI Toggle RS Radio Callback
+RegisterNUICallback('toggleRadio', function(data, cb)
+    TriggerServerEvent('rs_paddock_tv:server:toggleRadio', data)
     cb('ok')
 end)
 

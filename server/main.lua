@@ -9,17 +9,37 @@ end
 local tvStates = {}
 
 local function InitTVStates()
-    local defaultChannelTvId = Config.WeatherChannelTvId or 1
+    local defaultWeatherTvId = Config.WeatherChannelTvId or 1
+    local defaultRadioTvId = Config.RsRadioTvId or 7
+
     for locKey, _ in pairs(Config.Locations) do
         tvStates[locKey] = {}
         for tvId, _ in pairs(Config.TVs) do
-            local isDefaultWeatherTv = (Config.UseWeatherChannel and tvId == defaultChannelTvId)
-            tvStates[locKey][tvId] = {
-                url = isDefaultWeatherTv and "weather_channel" or "",
-                playing = isDefaultWeatherTv and true or false,
-                time = 0,
-                volume = Config.DefaultVolume
-            }
+            local isDefaultWeatherTv = (Config.UseWeatherChannel and tvId == defaultWeatherTvId)
+            local isDefaultRadioTv = (Config.UseRsRadioChannel and tvId == defaultRadioTvId)
+
+            if isDefaultWeatherTv then
+                tvStates[locKey][tvId] = {
+                    url = "weather_channel",
+                    playing = true,
+                    time = 0,
+                    volume = Config.DefaultVolume
+                }
+            elseif isDefaultRadioTv then
+                tvStates[locKey][tvId] = {
+                    url = "rs_radio_channel",
+                    playing = true,
+                    time = 0,
+                    volume = Config.DefaultVolume
+                }
+            else
+                tvStates[locKey][tvId] = {
+                    url = "",
+                    playing = false,
+                    time = 0,
+                    volume = Config.DefaultVolume
+                }
+            end
         end
     end
 end

@@ -86,6 +86,9 @@ function applyLocalesToUI() {
     var btnWeatherText = document.getElementById('btn-weather-text');
     if (btnWeatherText) btnWeatherText.innerText = _L('ui_weather_channel', 'WEATHER CHANNEL');
 
+    var btnRadioText = document.getElementById('btn-radio-text');
+    if (btnRadioText) btnRadioText.innerText = _L('ui_radio_bgm', 'RS RADIO BGM');
+
     var noFeedText = document.getElementById('no-feed-text');
     if (noFeedText) noFeedText.innerText = _L('ui_no_feed', 'NO ACTIVE VIDEO FEED');
 
@@ -371,14 +374,17 @@ function createTvCard(tvId) {
     var isLive = state.playing && state.url && state.url !== "";
     var isPaused = !state.playing && state.url && state.url !== "";
     var isWeather = state.url === "weather_channel";
+    var isRadio = state.url === "rs_radio_channel";
 
     var badgeClass = isLive ? 'badge-live' : (isPaused ? 'badge-paused' : 'badge-off');
     var dotClass = isLive ? 'dot-live' : (isPaused ? 'dot-paused' : 'dot-off');
-    var statusText = isLive ? (isWeather ? 'WEATHER' : 'LIVE') : (isPaused ? 'PAUSE' : 'OFF');
+    var statusText = isLive ? (isWeather ? 'WEATHER' : (isRadio ? 'RS RADIO' : 'LIVE')) : (isPaused ? 'PAUSE' : 'OFF');
 
     var previewHtml = "";
     if (isWeather) {
         previewHtml = `<div class="tv-card-no-feed" style="background: radial-gradient(circle, #1a233a 0%, #0c101c 100%);"><i class="fa-solid fa-cloud-sun text-gold" style="font-size:20px;"></i><span style="font-size:9px; font-weight:800; color:#d2b78d; margin-top:2px;">RS WEATHER</span></div>`;
+    } else if (isRadio) {
+        previewHtml = `<div class="tv-card-no-feed" style="background: radial-gradient(circle, #2a1640 0%, #0c0915 100%);"><i class="fa-solid fa-radio text-gold" style="font-size:20px;"></i><span style="font-size:9px; font-weight:800; color:#a78bfa; margin-top:2px;">RS RADIO</span></div>`;
     } else {
         var videoId = getYoutubeId(state.url);
         if (videoId && (isLive || isPaused)) {
@@ -517,6 +523,7 @@ function updateUIStateForCurrentScope() {
     var isLive = state.playing && state.url && state.url !== "";
     var isPaused = !state.playing && state.url && state.url !== "";
     var isWeather = state.url === "weather_channel";
+    var isRadio = state.url === "rs_radio_channel";
 
     if (isWeather) {
         if (iframe) iframe.style.display = 'none';
@@ -535,6 +542,26 @@ function updateUIStateForCurrentScope() {
 
         badge.className = "monitor-status-badge badge-live";
         badge.innerHTML = `<span class="status-dot dot-live"></span> WEATHER CHANNEL`;
+        document.getElementById('action-pause').style.display = 'none';
+        document.getElementById('action-resume').style.display = 'none';
+
+    } else if (isRadio) {
+        if (iframe) iframe.style.display = 'none';
+        if (placeholder) {
+            placeholder.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; background: radial-gradient(circle, #2d1847 0%, #090614 100%);">
+                    <i class="fa-solid fa-radio text-gold" style="font-size:52px; margin-bottom:12px; filter:drop-shadow(0 0 10px rgba(139,92,246,0.6));"></i>
+                    <h3 style="font-family:var(--font-heading); font-size:16px; font-weight:800; color:#ffffff; letter-spacing:1px;">RS RADIO STATION</h3>
+                    <p style="font-size:11px; font-weight:600; color:#a78bfa; margin-top:4px;">STEREO 98.4 MHz • ANIMATED BGM SPECTRUM</p>
+                    <div class="monitor-scanlines"></div>
+                </div>
+            `;
+            placeholder.style.display = 'flex';
+        }
+        if (input) input.value = "rs_radio_channel";
+
+        badge.className = "monitor-status-badge badge-live";
+        badge.innerHTML = `<span class="status-dot dot-live"></span> RS RADIO STATION`;
         document.getElementById('action-pause').style.display = 'none';
         document.getElementById('action-resume').style.display = 'none';
 
@@ -631,6 +658,20 @@ document.getElementById('action-weather').addEventListener('click', function() {
         showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doSwitchWeather);
     } else {
         doSwitchWeather();
+    }
+});
+
+document.getElementById('action-radio').addEventListener('click', function() {
+    if (typeof GetParentResourceName !== 'undefined') {
+        fetch(`https://${GetParentResourceName()}/toggleRadio`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=UTF-8'
+            },
+            body: JSON.stringify({
+                locationKey: currentLocationKey
+            })
+        });
     }
 });
 

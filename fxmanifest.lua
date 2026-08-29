@@ -32,7 +32,10 @@ files {
     'html/logo.webp',
     'html/weather_channel/index.html',
     'html/weather_channel/style.css',
-    'html/weather_channel/app.js'
+    'html/weather_channel/app.js',
+    'html/radio_channel/index.html',
+    'html/radio_channel/style.css',
+    'html/radio_channel/app.js'
 }
 
 escrow_ignore {
@@ -51,6 +54,9 @@ escrow_ignore {
     'html/weather_channel/index.html',
     'html/weather_channel/style.css',
     'html/weather_channel/app.js',
+    'html/radio_channel/index.html',
+    'html/radio_channel/style.css',
+    'html/radio_channel/app.js',
     'README.md',
     'DEVELOPER.md'
 }
