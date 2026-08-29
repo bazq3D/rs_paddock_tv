@@ -166,6 +166,14 @@ document.getElementById('scope-btn-g2').addEventListener('click', function() {
 });
 
 function handleScopeChange(scope, groupId) {
+    currentScope = scope;
+    if (groupId) {
+        currentGroupId = groupId;
+        currentTvId = (groupId === 2) ? 5 : 1;
+    }
+    updateScopeButtonsUI();
+    renderTvMatrix();
+
     var activeState = tvStatesMap[currentTvId];
     var inputVal = document.getElementById('custom-url-input') ? document.getElementById('custom-url-input').value.trim() : "";
     var activeUrl = (activeState && activeState.url && activeState.url !== "") ? activeState.url : inputVal;
@@ -179,10 +187,6 @@ function handleScopeChange(scope, groupId) {
     }
 
     var doApplyScopeSync = function() {
-        currentScope = scope;
-        if (groupId) currentGroupId = groupId;
-        updateScopeButtonsUI();
-
         if (activeUrl && activeUrl !== "") {
             updateTVState({
                 action: 'play',
@@ -223,6 +227,7 @@ window.addEventListener('message', function(event) {
         
         currentScope = 'single';
         currentTvId = parseInt(data.selectedTvId) || 1;
+        currentGroupId = (currentTvId >= 5 && currentTvId <= 7) ? 2 : 1;
         currentLocationKey = data.locationKey || null;
         tvListMap = data.tvList || {};
         tvGroupsMap = data.tvGroups || {};
@@ -270,18 +275,18 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('ui-wrapper').style.display = 'flex';
         
         var mockTvList = {
-            1: { name: "TV #1 (Ön Grup)", model: "rs_paddock_tv_app1" },
-            2: { name: "TV #2 (Ön Grup)", model: "rs_paddock_tv_app2" },
-            3: { name: "TV #3 (Ön Grup)", model: "rs_paddock_tv_app3" },
-            4: { name: "TV #4 (Ön Grup)", model: "rs_paddock_tv_app4" },
-            5: { name: "TV #5 (Arka Grup)", model: "rs_paddock_tv_app5" },
-            6: { name: "TV #6 (Arka Grup)", model: "rs_paddock_tv_app6" },
-            7: { name: "TV #7 (Arka Grup)", model: "rs_paddock_tv_app7" }
+            1: { name: "TV #1 (Left Bar)", model: "rs_paddock_tv_app1" },
+            2: { name: "TV #2 (Left Bar)", model: "rs_paddock_tv_app2" },
+            3: { name: "TV #3 (Left Bar)", model: "rs_paddock_tv_app3" },
+            4: { name: "TV #4 (Left Bar)", model: "rs_paddock_tv_app4" },
+            5: { name: "TV #5 (Right Bar)", model: "rs_paddock_tv_app5" },
+            6: { name: "TV #6 (Right Bar)", model: "rs_paddock_tv_app6" },
+            7: { name: "TV #7 (Right Bar)", model: "rs_paddock_tv_app7" }
         };
 
         var mockTvGroups = {
-            1: { id: 1, name: "SOL BAR (TV 1-4)", tvIds: [1, 2, 3, 4] },
-            2: { id: 2, name: "SAĞ BAR (TV 5-7)", tvIds: [5, 6, 7] }
+            1: { id: 1, name: "LEFT BAR (TV 1-4)", tvIds: [1, 2, 3, 4] },
+            2: { id: 2, name: "RIGHT BAR (TV 5-7)", tvIds: [5, 6, 7] }
         };
 
         var mockStates = {
@@ -298,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
             action: 'show',
             tvList: mockTvList,
             tvGroups: mockTvGroups,
-            selectedTvId: 1,
+            selectedTvId: 5,
             tvStates: mockStates,
             locationLabel: "RS Paddock // Del Pierro",
             locationCoords: "-2202.10, -392.15, 15.08"
@@ -383,6 +388,7 @@ function createTvCard(tvId) {
         if (e.target.classList.contains('card-vol-slider')) return;
         currentScope = 'single';
         currentTvId = tvId;
+        currentGroupId = (tvId >= 5 && tvId <= 7) ? 2 : 1;
         updateScopeButtonsUI();
         renderTvMatrix();
         updateUIStateForCurrentScope();
@@ -599,6 +605,10 @@ volumeSlider.addEventListener('input', function() {
 
 // Sunucuya Durum Güncelleme İsteği Gönderme / Web İnceleme Fallback
 function updateTVState(data) {
+    if (data.tvId) {
+        currentTvId = data.tvId;
+        currentGroupId = (data.tvId >= 5 && data.tvId <= 7) ? 2 : 1;
+    }
     data.targetScope = currentScope;
     data.tvId = currentTvId;
     data.groupId = currentGroupId;
