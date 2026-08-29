@@ -164,7 +164,7 @@ RegisterNetEvent('rs_paddock_tv:client:weatherChannelData', function(data)
     end
 end)
 
--- Replace target texture with DUI runtime texture
+-- Replace target TV texture with DUI runtime texture
 local function ReplaceTVTexture(tvId, streamUrl)
     local instance = GetOrCreateTvDui(tvId, streamUrl)
     if not instance or instance.isReplaced then return end
@@ -172,21 +172,20 @@ local function ReplaceTVTexture(tvId, streamUrl)
     local tvConfig = Config.TVs[tvId]
     if not tvConfig then return end
 
-    -- 1. Shared TXD (rs_paddock_tvapp_txd) -> txn (rs_paddock_tvapp1..7)
-    AddReplaceTexture("rs_paddock_tvapp_txd", ("rs_paddock_tvapp%d"):format(tvId), instance.runtimeTxdName, instance.runtimeTxnName)
-    AddReplaceTexture("rs_paddock_tvapp_txd", ("rs_paddock_tv_app%d"):format(tvId), instance.runtimeTxdName, instance.runtimeTxnName)
+    local targetTxd = tvConfig.txd or "rs_paddock_tvapp_txd"
+    local targetTxn = tvConfig.txn or ("rs_paddock_tvapp%d"):format(tvId)
 
-    -- 2. Model TXD (rs_paddock_tv_app1..7) -> txn
+    -- 1. Replace texture on shared TXD (rs_paddock_tvapp_txd -> rs_paddock_tvapp1..7)
+    AddReplaceTexture(targetTxd, targetTxn, instance.runtimeTxdName, instance.runtimeTxnName)
+    AddReplaceTexture(targetTxd, tvConfig.model or ("rs_paddock_tv_app%d"):format(tvId), instance.runtimeTxdName, instance.runtimeTxnName)
+
+    -- 2. Replace texture directly on prop model (rs_paddock_tv_app1..7)
     if tvConfig.model then
-        AddReplaceTexture(tvConfig.model, ("rs_paddock_tvapp%d"):format(tvId), instance.runtimeTxdName, instance.runtimeTxnName)
-        AddReplaceTexture(tvConfig.model, ("rs_paddock_tv_app%d"):format(tvId), instance.runtimeTxdName, instance.runtimeTxnName)
+        AddReplaceTexture(tvConfig.model, targetTxn, instance.runtimeTxdName, instance.runtimeTxnName)
+        AddReplaceTexture(tvConfig.model, tvConfig.model, instance.runtimeTxdName, instance.runtimeTxnName)
     end
 
-    -- 3. Legacy GIF TXD (rs_paddock_tvgifs) -> gif txn
-    AddReplaceTexture("rs_paddock_tvgifs", ("rs_paddock_gif%d"):format(tvId), instance.runtimeTxdName, instance.runtimeTxnName)
-    AddReplaceTexture(("rs_paddock_tvgifs%d"):format(tvId), ("rs_paddock_gif%d"):format(tvId), instance.runtimeTxdName, instance.runtimeTxnName)
-
-    dbg(("Texture replaced [TV #%d]: rs_paddock_tvapp_txd/rs_paddock_tvapp%d -> %s/%s"):format(tvId, tvId, instance.runtimeTxdName, instance.runtimeTxnName))
+    dbg(("Texture replaced [TV #%d]: %s/%s -> %s/%s"):format(tvId, targetTxd, targetTxn, instance.runtimeTxdName, instance.runtimeTxnName))
     instance.isReplaced = true
 end
 
@@ -198,15 +197,16 @@ local function RestoreTVTexture(tvId)
     local tvConfig = Config.TVs[tvId]
     if not tvConfig then return end
 
-    RemoveReplaceTexture("rs_paddock_tvapp_txd", ("rs_paddock_tvapp%d"):format(tvId))
-    RemoveReplaceTexture("rs_paddock_tvapp_txd", ("rs_paddock_tv_app%d"):format(tvId))
+    local targetTxd = tvConfig.txd or "rs_paddock_tvapp_txd"
+    local targetTxn = tvConfig.txn or ("rs_paddock_tvapp%d"):format(tvId)
+
+    RemoveReplaceTexture(targetTxd, targetTxn)
+    RemoveReplaceTexture(targetTxd, tvConfig.model or ("rs_paddock_tv_app%d"):format(tvId))
 
     if tvConfig.model then
-        RemoveReplaceTexture(tvConfig.model, ("rs_paddock_tvapp%d"):format(tvId))
-        RemoveReplaceTexture(tvConfig.model, ("rs_paddock_tv_app%d"):format(tvId))
+        RemoveReplaceTexture(tvConfig.model, targetTxn)
+        RemoveReplaceTexture(tvConfig.model, tvConfig.model)
     end
-    RemoveReplaceTexture("rs_paddock_tvgifs", ("rs_paddock_gif%d"):format(tvId))
-    RemoveReplaceTexture(("rs_paddock_tvgifs%d"):format(tvId), ("rs_paddock_gif%d"):format(tvId))
 
     dbg(("Texture restored [TV #%d]"):format(tvId))
     instance.isReplaced = false
