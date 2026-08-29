@@ -1,7 +1,7 @@
 var currentVideoId = "";
 var resourceName = "rs_paddock_tv";
 
-// Extract resource name from URL params if present
+// Extract resource name and initial stream URL from URL params if present
 (function() {
     try {
         var params = new URLSearchParams(window.location.search);
@@ -10,6 +10,26 @@ var resourceName = "rs_paddock_tv";
         }
     } catch(e) {}
 })();
+
+document.addEventListener("DOMContentLoaded", function() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var urlParam = params.get('url');
+        var timeParam = params.get('time');
+        var volParam = params.get('volume');
+
+        if (urlParam) {
+            var vId = youtubeVideoId(urlParam);
+            if (vId) {
+                currentVideoId = vId;
+                var startTime = parseFloat(timeParam) || 0;
+                var vol = parseInt(volParam) || 30;
+                var embedUrl = youtubeEmbedUrl(urlParam, resourceName, startTime);
+                showVideo(embedUrl, vol);
+            }
+        }
+    } catch(e) {}
+});
 
 // Helper function to extract video ID from any YouTube URL format (watch, shorts, live, embed, youtu.be)
 function youtubeVideoId(url) {
@@ -37,7 +57,7 @@ function youtubeEmbedUrl(url, resName, startTime) {
     var origin = "https://cfx-nui-" + resName;
     var params = new URLSearchParams({
         autoplay: "1",
-        mute: "1",
+        mute: "0",
         controls: "0",
         loop: "1",
         playlist: id,
@@ -46,9 +66,7 @@ function youtubeEmbedUrl(url, resName, startTime) {
         rel: "0",
         iv_load_policy: "3",
         disablekb: "1",
-        enablejsapi: "1",
-        origin: origin,
-        widget_referrer: origin
+        enablejsapi: "1"
     });
     if (startTime && startTime > 0) {
         params.set("start", Math.floor(startTime));
@@ -81,13 +99,15 @@ function showVideo(embedUrl, volume) {
 
     var vol = volume !== undefined ? volume : 30;
 
-    // Unmute & set volume after load, then fade out black mask overlay
-    setTimeout(function() {
-        sendCommand("unMute");
-        sendCommand("setVolume", [vol]);
-        sendCommand("playVideo");
-        if (overlay) overlay.style.opacity = "0";
-    }, 1400);
+    // Periodically send unMute and setVolume commands to guarantee playback unmutes
+    [400, 900, 1400, 2200].forEach(function(delay) {
+        setTimeout(function() {
+            sendCommand("unMute");
+            sendCommand("setVolume", [vol]);
+            sendCommand("playVideo");
+            if (overlay && delay >= 1400) overlay.style.opacity = "0";
+        }, delay);
+    });
 }
 
 // NUI DUI Event Listener

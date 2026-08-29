@@ -1,4 +1,7 @@
 local tvStates = {}
+local sharedDuis = {}
+local activeTvDuiKeys = {}
+local duiInstancesIsReplaced = {}
 
 -- bazq style local debug print helper
 local function dbg(msg)
@@ -71,13 +74,13 @@ local function SyncTvEntitySets(locKey, closestLoc)
 
     if refreshNeeded then
         RefreshInterior(interiorId)
+        for tvId = 1, 7 do
+            duiInstancesIsReplaced[tvId] = false
+        end
     end
 end
 
 -- Shared DUI Browser Pool (Maps streamKey -> Shared DUI Instance)
-local sharedDuis = {}
-local activeTvDuiKeys = {}
-local duiInstancesIsReplaced = {}
 
 local function ExtractYoutubeId(url)
     if not url or url == "" then return "" end
@@ -195,16 +198,13 @@ local function SendDuiAction(tvId, actionData)
 
     if instance.isNew then
         instance.isNew = false
-        Citizen.SetTimeout(350, function()
-            if sharedDuis[streamKey] and sharedDuis[streamKey].duiObject then
-                SendDuiMessage(sharedDuis[streamKey].duiObject, payload)
-            end
-        end)
-        Citizen.SetTimeout(700, function()
-            if sharedDuis[streamKey] and sharedDuis[streamKey].duiObject then
-                SendDuiMessage(sharedDuis[streamKey].duiObject, payload)
-            end
-        end)
+        for _, delay in ipairs({ 300, 700, 1400, 2200 }) do
+            Citizen.SetTimeout(delay, function()
+                if sharedDuis[streamKey] and sharedDuis[streamKey].duiObject then
+                    SendDuiMessage(sharedDuis[streamKey].duiObject, payload)
+                end
+            end)
+        end
     end
 end
 
@@ -267,7 +267,6 @@ local function ReplaceTVTexture(tvId, streamUrl, streamTime)
     if not instance then return end
 
     local oldKey = activeTvDuiKeys[tvId]
-    if oldKey == streamKey and duiInstancesIsReplaced[tvId] then return end
 
     if oldKey and oldKey ~= streamKey then
         RestoreTVTexture(tvId)
@@ -336,23 +335,25 @@ Citizen.CreateThread(function()
 
             local locTvStates = tvStates[closestLocKey] or {}
 
-            -- Identify primary audio master TV for each active stream URL (prevents audio overlap/echo)
+            -- Identify primary audio master TV for each active stream URL (TV #4 preferred for central audio coverage)
             local activeMasterTvs = {}
             if Config.MuteDuplicateAudio ~= false then
                 for tvId = 1, 7 do
                     local state = locTvStates[tvId]
                     if state and state.playing and state.url ~= "" then
                         local urlKey = state.url
-                        if not activeMasterTvs[urlKey] then
+                        -- TV #4 is the dedicated central audio master for synced TV streams
+                        if not activeMasterTvs[urlKey] or tvId == 4 then
                             activeMasterTvs[urlKey] = tvId
                         end
                     end
                 end
             end
 
+            local streamKeyActions = {}
+
             for tvId, tvConfig in pairs(Config.TVs) do
                 local state = locTvStates[tvId]
-                local instance = duiInstances[tvId]
 
                 if state and state.playing and state.url ~= "" then
                     ReplaceTVTexture(tvId, state.url, state.time)
@@ -364,23 +365,34 @@ Citizen.CreateThread(function()
                         end
                     end
 
-                    local volPercent = 0
-                    if isMasterForAudio and distance <= Config.MaxRenderDistance then
-                        local progress = distance / Config.MaxRenderDistance
-                        local volumeMultiplier = 1.0 - progress
-                        volPercent = math.floor(state.volume * volumeMultiplier)
-                        if volPercent < 0 then volPercent = 0 end
-                    end
+                    if isMasterForAudio then
+                        local volPercent = 0
+                        local maxDist = (Config.MaxRenderDistance or 35.0) + 15.0
+                        if distance <= maxDist then
+                            local progress = distance / maxDist
+                            local volumeMultiplier = math.max(0.35, 1.0 - (progress * 0.5))
+                            volPercent = math.floor((state.volume or 100) * volumeMultiplier)
+                            if volPercent > 100 then volPercent = 100 end
+                            if volPercent < 15 then volPercent = 15 end
+                        end
 
-                    SendDuiAction(tvId, {
-                        action = 'play',
-                        url = state.url,
-                        time = state.time,
-                        volume = volPercent
-                    })
+                        local streamKey = GetStreamKey(state.url, state.time)
+                        streamKeyActions[streamKey] = {
+                            tvId = tvId,
+                            action = 'play',
+                            url = state.url,
+                            time = state.time,
+                            volume = volPercent
+                        }
+                    end
                 else
                     RestoreTVTexture(tvId)
                 end
+            end
+
+            -- Dispatch audio/play action once per unique shared DUI instance (prevents muting shared browser)
+            for streamKey, actionData in pairs(streamKeyActions) do
+                SendDuiAction(actionData.tvId, actionData)
             end
         else
             -- Player far from any Paddock location: restore textures and clean shared DUIs
@@ -419,36 +431,6 @@ RegisterNetEvent('rs_paddock_tv:client:syncTvState', function(locKey, tvId, stat
     
     -- Only trigger active DUI / EntitySet / NUI updates if player is at this location
     if closestLocKey == locKey then
-        local instance = duiInstances[tvId]
-
-        if state.url ~= "" and state.playing then
-            GetOrCreateTvDui(tvId)
-            ReplaceTVTexture(tvId)
-
-            local volPercent = state.volume or Config.DefaultVolume
-            if distance <= Config.MaxRenderDistance then
-                local progress = distance / Config.MaxRenderDistance
-                volPercent = math.floor(state.volume * (1.0 - progress))
-                if volPercent < 0 then volPercent = 0 end
-            end
-
-            SendDuiAction(tvId, {
-                action = 'play',
-                url = state.url,
-                time = state.time,
-                volume = volPercent
-            })
-        else
-            if instance and instance.duiObject then
-                if state.url == "" then
-                    RestoreTVTexture(tvId)
-                    SendDuiAction(tvId, { action = 'stop' })
-                else
-                    SendDuiAction(tvId, { action = 'pause' })
-                end
-            end
-        end
-
         SyncTvEntitySets(locKey, closestLoc)
 
         -- Update NUI state if control panel is open
