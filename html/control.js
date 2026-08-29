@@ -671,16 +671,32 @@ document.getElementById('action-weather').addEventListener('click', function() {
 });
 
 document.getElementById('action-radio').addEventListener('click', function() {
-    if (typeof GetParentResourceName !== 'undefined') {
-        fetch(`https://${GetParentResourceName()}/toggleRadio`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json; charset=UTF-8'
-            },
-            body: JSON.stringify({
-                locationKey: currentLocationKey
-            })
+    var state = tvStatesMap[currentTvId];
+    var isLive = state && state.playing && state.url && state.url !== "" && state.url !== "rs_radio_channel";
+
+    var doSwitchRadio = function() {
+        document.getElementById('custom-url-input').value = "rs_radio_channel";
+        updateTVState({
+            action: 'play',
+            url: 'rs_radio_channel'
         });
+        if (typeof GetParentResourceName !== 'undefined') {
+            fetch(`https://${GetParentResourceName()}/toggleRadio`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=UTF-8'
+                },
+                body: JSON.stringify({
+                    locationKey: currentLocationKey
+                })
+            });
+        }
+    };
+
+    if (isLive) {
+        showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doSwitchRadio);
+    } else {
+        doSwitchRadio();
     }
 });
 
