@@ -91,6 +91,87 @@ AddEventHandler('onResourceStart', function(resourceName)
     end
 end)
 
+-- Send Discord Webhook Log Notification
+local function SendDiscordLog(source, locKey, scope, targetTvId, groupId, action, url, volume)
+    if not Config.DiscordLogs or not Config.DiscordWebhook or Config.DiscordWebhook == "" then
+        return
+    end
+
+    local srcNum = tonumber(source) or 0
+    local playerName = (srcNum > 0) and GetPlayerName(srcNum) or "SYSTEM / DISASTER BROADCAST"
+    local locData = Config.Locations[locKey]
+    local locLabel = locData and locData.label or (locKey or "All Locations")
+
+    local title = "📺 Paddock TV State Updated"
+    local color = 3447003 -- Blue
+
+    if action == 'play' then
+        title = "▶️ TV Stream Started"
+        color = 5763719 -- Green
+    elseif action == 'stop' then
+        title = "⏹️ TV Turn Off / Cleared"
+        color = 15548997 -- Red
+    elseif action == 'pause' then
+        title = "⏸️ TV Stream Paused"
+        color = 16705372 -- Yellow
+    elseif action == 'resume' then
+        title = "▶️ TV Stream Resumed"
+        color = 3447003 -- Blue
+    elseif action == 'volume' then
+        title = "🔊 TV Volume Adjusted"
+        color = 10181046 -- Purple
+    elseif action == 'disaster_start' then
+        title = "🚨 EMERGENCY DISASTER BROADCAST STARTED"
+        color = 15158332 -- Red Alert
+    elseif action == 'disaster_end' then
+        title = "🟢 EMERGENCY DISASTER BROADCAST CLEARED"
+        color = 3066993 -- Green Restored
+    end
+
+    local scopeText = ("Single TV (#%d)"):format(targetTvId or 1)
+    if scope == 'all' or scope == 'GLOBAL' or scope == 'ALL' then
+        scopeText = "Global Sync (All 7 TVs)"
+    elseif scope == 'group' then
+        scopeText = (groupId == 1) and "Left Bar (TV 1-4)" or "Right Bar (TV 5-7)"
+    end
+
+    local embedFields = {
+        { ["name"] = "👤 Player", ["value"] = ("%s (ID: %s)"):format(playerName, tostring(srcNum)), ["inline"] = true },
+        { ["name"] = "📍 Location", ["value"] = locLabel, ["inline"] = true },
+        { ["name"] = "🎯 Target Scope", ["value"] = scopeText, ["inline"] = true },
+        { ["name"] = "⚡ Action", ["value"] = tostring(action):upper(), ["inline"] = true }
+    }
+
+    if action == 'play' and url and url ~= "" then
+        table.insert(embedFields, { ["name"] = "🔗 YouTube URL", ["value"] = url, ["inline"] = false })
+    elseif action == 'volume' and volume then
+        table.insert(embedFields, { ["name"] = "🔊 Volume Level", ["value"] = ("%d%%"):format(volume), ["inline"] = true })
+    end
+
+    local embedObj = {
+        ["title"] = title,
+        ["color"] = color,
+        ["fields"] = embedFields,
+        ["footer"] = {
+            ["text"] = "bazq - rs_paddock_tv",
+        },
+        ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
+    }
+
+    if action == 'play' and url and url ~= "" then
+        local videoId = string.match(url, "v=([%w_%-]+)") or string.match(url, "youtu%.be/([%w_%-]+)")
+        if videoId then
+            embedObj["image"] = { ["url"] = "https://img.youtube.com/vi/" .. videoId .. "/mqdefault.jpg" }
+        end
+    end
+
+    PerformHttpRequest(Config.DiscordWebhook, function(err, text, headers) end, 'POST', json.encode({
+        username = Config.DiscordBotName or "bazq Paddock TV",
+        avatar_url = Config.DiscordBotAvatar or "",
+        embeds = { embedObj }
+    }), { ['Content-Type'] = 'application/json' })
+end
+
 -- =============================================================================
 -- RETRO STORE WEATHER DISASTER EMERGENCY BROADCAST SYSTEM
 -- =============================================================================
@@ -325,87 +406,6 @@ local function ApplyStateToTV(locKey, tvId, data)
     end
 
     TriggerClientEvent('rs_paddock_tv:client:syncTvState', -1, locKey, tvId, state)
-end
-
--- Send Discord Webhook Log Notification
-local function SendDiscordLog(source, locKey, scope, targetTvId, groupId, action, url, volume)
-    if not Config.DiscordLogs or not Config.DiscordWebhook or Config.DiscordWebhook == "" then
-        return
-    end
-
-    local playerName = GetPlayerName(source) or "Unknown Player"
-    local playerIdentifier = GetPlayerIdentifier(source, 0) or "N/A"
-    local locData = Config.Locations[locKey]
-    local locLabel = locData and locData.label or (locKey or "Unknown Location")
-
-    local title = "📺 Paddock TV State Updated"
-    local color = 3447003 -- Blue
-
-    if action == 'play' then
-        title = "▶️ TV Stream Started"
-        color = 5763719 -- Green
-    elseif action == 'stop' then
-        title = "⏹️ TV Turn Off / Cleared"
-        color = 15548997 -- Red
-    elseif action == 'pause' then
-        title = "⏸️ TV Stream Paused"
-        color = 16705372 -- Yellow
-    elseif action == 'resume' then
-        title = "▶️ TV Stream Resumed"
-        color = 3447003 -- Blue
-    elseif action == 'volume' then
-        title = "🔊 TV Volume Adjusted"
-        color = 10181046 -- Purple
-    elseif action == 'disaster_start' then
-        title = "🚨 EMERGENCY DISASTER BROADCAST STARTED"
-        color = 15158332 -- Red Alert
-    elseif action == 'disaster_end' then
-        title = "🟢 EMERGENCY DISASTER BROADCAST CLEARED"
-        color = 3066993 -- Green Restored
-    end
-
-    local scopeText = ("Single TV (#%d)"):format(targetTvId)
-    if scope == 'all' then
-        scopeText = "Global Sync (All 7 TVs)"
-    elseif scope == 'group' then
-        scopeText = (groupId == 1) and "Left Bar (TV 1-4)" or "Right Bar (TV 5-7)"
-    end
-
-    local embedFields = {
-        { ["name"] = "👤 Player", ["value"] = ("%s (ID: %s)"):format(playerName, tostring(source)), ["inline"] = true },
-        { ["name"] = "📍 Location", ["value"] = locLabel, ["inline"] = true },
-        { ["name"] = "🎯 Target Scope", ["value"] = scopeText, ["inline"] = true },
-        { ["name"] = "⚡ Action", ["value"] = tostring(action):upper(), ["inline"] = true }
-    }
-
-    if action == 'play' and url and url ~= "" then
-        table.insert(embedFields, { ["name"] = "🔗 YouTube URL", ["value"] = url, ["inline"] = false })
-    elseif action == 'volume' and volume then
-        table.insert(embedFields, { ["name"] = "🔊 Volume Level", ["value"] = ("%d%%"):format(volume), ["inline"] = true })
-    end
-
-    local embedObj = {
-        ["title"] = title,
-        ["color"] = color,
-        ["fields"] = embedFields,
-        ["footer"] = {
-            ["text"] = "bazq - rs_paddock_tv",
-        },
-        ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ")
-    }
-
-    if action == 'play' and url and url ~= "" then
-        local videoId = string.match(url, "v=([%w_%-]+)") or string.match(url, "youtu%.be/([%w_%-]+)")
-        if videoId then
-            embedObj["image"] = { ["url"] = "https://img.youtube.com/vi/" .. videoId .. "/mqdefault.jpg" }
-        end
-    end
-
-    PerformHttpRequest(Config.DiscordWebhook, function(err, text, headers) end, 'POST', json.encode({
-        username = Config.DiscordBotName or "bazq Paddock TV",
-        avatar_url = Config.DiscordBotAvatar or "",
-        embeds = { embedObj }
-    }), { ['Content-Type'] = 'application/json' })
 end
 
 -- Update TV state per location and broadcast to all players (Multi-scope support)
