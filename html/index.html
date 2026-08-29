@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Store - Master Paddock TV Control Station</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="control.css">
+</head>
+<body>
+    <div id="ui-wrapper" style="display: none;">
+        <div id="container" class="dashboard-container">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <div class="logo-wrapper">
+                        <img src="logo.webp" alt="Retro Store Paddock Logo" class="header-logo-img">
+                    </div>
+                    <div class="title-wrapper">
+                        <h1>PADDOCK BAR TV MATRIX</h1>
+                        <p class="subtitle">RETRO STORE // 7-SCREEN INDEPENDENT DUI CONTROL</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button id="close-btn" class="close-btn" title="Close Panel (ESC)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- TV Matrix Layout Bar (Sol Bar 4 TV - Sağ Bar 3 TV) -->
+            <div class="tv-matrix-bar">
+                <div class="matrix-sections">
+                    <!-- Sol Bar Section (4 TVs) -->
+                    <div class="bar-section-left">
+                        <div class="section-badge"><i class="fa-solid fa-desktop"></i> SOL BAR (TV 1-4)</div>
+                        <div class="cards-row" id="cards-row-left">
+                            <!-- Dynamic Cards TV #1, #2, #3, #4 -->
+                        </div>
+                    </div>
+
+                    <div class="bar-divider">
+                        <i class="fa-solid fa-grip-lines-vertical"></i>
+                    </div>
+
+                    <!-- Sağ Bar Section (3 TVs) -->
+                    <div class="bar-section-right">
+                        <div class="section-badge"><i class="fa-solid fa-desktop"></i> SAĞ BAR (TV 5-7)</div>
+                        <div class="cards-row" id="cards-row-right">
+                            <!-- Dynamic Cards TV #5, #6, #7 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Master Control Room Workspace -->
+            <main class="workspace">
+                <!-- Left Section: Program Preview Monitor & Direct Stream Input -->
+                <section class="panel-main">
+                    <div class="monitor-container">
+                        <div class="monitor-header">
+                            <span class="monitor-label" id="preview-monitor-label">
+                                <i class="fa-solid fa-tv"></i> PROGRAM MONITOR — FOCUSED: TV #1
+                            </span>
+                            <span class="monitor-status-badge badge-off" id="preview-status-badge">
+                                <span class="status-dot dot-off"></span> OFF / IDLE
+                            </span>
+                        </div>
+                        <div class="monitor-frame">
+                            <iframe id="preview-iframe" src="about:blank" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="no-referrer"></iframe>
+                            <div class="monitor-overlay-placeholder" id="preview-placeholder">
+                                <i class="fa-solid fa-video-slash"></i>
+                                <span>NO ACTIVE VIDEO FEED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direct YouTube Link Input & Clean Action Controls -->
+                    <div class="card custom-url-card">
+                        <label for="custom-url-input"><i class="fa-brands fa-youtube"></i> YOUTUBE STREAM URL / LINK</label>
+                        <div class="input-group">
+                            <input type="text" id="custom-url-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+                            <button id="play-custom-btn" class="btn-primary">
+                                <i class="fa-solid fa-play"></i> PLAY
+                            </button>
+                            <button id="action-pause" class="btn-action btn-warning">
+                                <i class="fa-solid fa-pause"></i> PAUSE
+                            </button>
+                            <button id="action-resume" class="btn-action btn-success" style="display: none;">
+                                <i class="fa-solid fa-play"></i> RESUME
+                            </button>
+                            <button id="action-stop" class="btn-action btn-danger">
+                                <i class="fa-solid fa-power-off"></i> STOP TV
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right Section: Target Scope Selector, Volume & Location Console -->
+                <section class="panel-side">
+                    <!-- Scope Target Selection Card -->
+                    <div class="card scope-card">
+                        <h4><i class="fa-solid fa-bullseye"></i> BROADCAST TARGET SCOPE</h4>
+                        <div class="scope-options">
+                            <button id="scope-btn-all" class="scope-btn">
+                                <i class="fa-solid fa-globe"></i> GLOBAL (ALL 7 TVs)
+                            </button>
+                            <button id="scope-btn-g1" class="scope-btn">
+                                <i class="fa-solid fa-layer-group"></i> SOL BAR (TV 1-4)
+                            </button>
+                            <button id="scope-btn-g2" class="scope-btn">
+                                <i class="fa-solid fa-layer-group"></i> SAĞ BAR (TV 5-7)
+                            </button>
+                        </div>
+                        <div class="scope-info-tag" id="scope-tag">TARGET: GLOBAL ALL 7 TVs</div>
+                    </div>
+
+                    <!-- Volume Adjust Card -->
+                    <div class="card volume-card">
+                        <div class="card-header">
+                            <h4><i class="fa-solid fa-volume-high"></i> VOLUME CONTROL</h4>
+                            <span id="volume-val" class="volume-badge">30%</span>
+                        </div>
+                        <div class="range-slider">
+                            <i class="fa-solid fa-volume-low"></i>
+                            <input type="range" id="volume-slider" min="0" max="100" value="30">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </div>
+                    </div>
+
+                    <!-- Interior Details Card -->
+                    <div class="card details-card">
+                        <h4><i class="fa-solid fa-location-dot"></i> INTERIOR DETAILS</h4>
+                        <div class="details-list">
+                            <div class="detail-row">
+                                <span class="label">LOCATION</span>
+                                <span id="active-interior" class="value text-gold">MLO Paddock</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">COORDINATES</span>
+                                <span id="active-coords" class="value">-2202.1, -392.1, 15.0</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- JS Logic -->
+    <script src="control.js"></script>
+</body>
+</html>
