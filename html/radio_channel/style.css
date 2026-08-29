@@ -53,70 +53,27 @@ html, body {
     pointer-events: none;
 }
 
-/* Fullscreen Ambient Scenery Background (Animated Synthwave Horizon) */
-.scenery-background {
+/* Dynamic Scenery Image Background Container & Ken-Burns Slide Transitions */
+.scenery-container {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 40%, #1e1333 0%, #0c0817 60%, #030206 100%);
     overflow: hidden;
+    background-color: #05070a;
 }
 
-.stars {
+.scenery-slide {
     position: absolute;
     inset: 0;
-    background-image: 
-        radial-gradient(1.5px 1.5px at 20px 30px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(1.5px 1.5px at 40px 70px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 90px 40px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(1.5px 1.5px at 160px 120px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 230px 80px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(1.5px 1.5px at 310px 150px, #ffffff, rgba(0,0,0,0));
-    background-repeat: repeat;
-    background-size: 350px 250px;
-    opacity: 0.6;
+    background-size: cover;
+    background-position: center center;
+    opacity: 0;
+    transition: opacity 1.8s ease-in-out, transform 14s ease-out;
+    transform: scale(1.0);
 }
 
-.sun {
-    position: absolute;
-    top: 35%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 220px;
-    height: 220px;
-    border-radius: 50%;
-    background: linear-gradient(180deg, #f59e0b 0%, #ec4899 70%, #8b5cf6 100%);
-    box-shadow: 0 0 80px rgba(245, 158, 11, 0.5);
-}
-
-.mountains {
-    position: absolute;
-    bottom: 25%;
-    width: 100%;
-    height: 120px;
-    background-image: 
-        polygon(0% 100%, 15% 30%, 30% 100%, 45% 40%, 65% 100%, 80% 25%, 100% 100%);
-    background: linear-gradient(180deg, #130a24 0%, #090412 100%);
-    clip-path: polygon(0 100%, 10% 40%, 22% 80%, 35% 20%, 50% 70%, 68% 15%, 82% 60%, 92% 30%, 100% 100%);
-}
-
-.synth-grid {
-    position: absolute;
-    bottom: 0;
-    left: -50%;
-    width: 200%;
-    height: 35%;
-    background: linear-gradient(180deg, rgba(139, 92, 246, 0.3) 0%, rgba(3, 2, 6, 0.95) 100%);
-    background-image: 
-        linear-gradient(90deg, rgba(139, 92, 246, 0.3) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(139, 92, 246, 0.3) 1px, transparent 1px);
-    background-size: 40px 20px;
-    transform: perspective(300px) rotateX(60deg);
-    animation: gridMove 4s linear infinite;
-}
-
-@keyframes gridMove {
-    0% { background-position: 0 0; }
-    100% { background-position: 0 40px; }
+.scenery-slide.active {
+    opacity: 1;
+    transform: scale(1.08);
 }
 
 /* Floating Compact Radio Widget (Matching Screenshot Birebir) */

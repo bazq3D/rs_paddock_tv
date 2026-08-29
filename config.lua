@@ -54,6 +54,16 @@ Config.WeatherChannelSettings = {
 -- =============================================================================
 Config.UseRsRadioChannel = true        -- Enable RS Radio Animated Visualizer Channel on Paddock TVs
 Config.RsRadioTvId = 7                 -- Default TV ID to play RS Radio Visualizer Channel when idle (1..7, default: 7)
+Config.RsRadioSettings = {
+    -- List of custom background scenery image URLs or local file paths for the Radio visualizer background
+    SceneryImages = {
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1280", -- Beach Sunset
+        "https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1280", -- Mountain Night Sky
+        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1280", -- Yosemite Valley
+        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1280"  -- Foggy Mountain Forest
+    },
+    SceneryIntervalSeconds = 12         -- Time interval between scenery image transitions (seconds)
+}
 
 -- =============================================================================
 -- 3. PERMISSIONS & ACCESS CONTROL

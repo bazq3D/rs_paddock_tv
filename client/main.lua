@@ -149,6 +149,17 @@ local function GetOrCreateSharedDui(streamKey, streamUrl, streamTime)
         isNew = true
     }
 
+    if isRadioChannel and Config.RsRadioSettings and Config.RsRadioSettings.SceneryImages then
+        Citizen.SetTimeout(600, function()
+            if sharedDuis[streamKey] and sharedDuis[streamKey].duiObject then
+                SendDuiMessage(sharedDuis[streamKey].duiObject, json.encode({
+                    type = 'rsradio:data',
+                    sceneryImages = Config.RsRadioSettings.SceneryImages
+                }))
+            end
+        end)
+    end
+
     return sharedDuis[streamKey]
 end
 
