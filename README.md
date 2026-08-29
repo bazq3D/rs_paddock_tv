@@ -112,6 +112,6 @@ Config.Commands = {
 
 ## 📄 License & Credits
 
-- Developed by **bazq**.
-- Special thanks to **Cody Raves** for the 3-layer FiveM DUI YouTube embed technique & guide.
+- Developed & Maintained by **bazq**.
+- Special thanks & credit to **Cody Raves** for `rs_weather` & `rs_radio` ecosystem integrations, general development guidance, and the 3-layer FiveM DUI YouTube embed technique.
 - Distributed under the [MIT License](LICENSE).

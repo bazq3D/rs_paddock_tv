@@ -142,4 +142,4 @@ When `Config.UseRsWeatherDisaster = true` and a natural disaster starts in `rs_w
 ## 🛠️ Credits
 
 - Codebase & Architecture by **bazq**.
-- Special thanks to **Cody Raves** for the 3-layer FiveM DUI YouTube embed technique & guide.
+- Special thanks & credit to **Cody Raves** for `rs_weather` & `rs_radio` ecosystem integrations, general development guidance, and the 3-layer FiveM DUI YouTube embed technique.
