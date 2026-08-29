@@ -70,6 +70,93 @@ AddEventHandler('onResourceStart', function(resourceName)
     end
 end)
 
+-- =============================================================================
+-- RETRO STORE WEATHER DISASTER EMERGENCY BROADCAST SYSTEM
+-- =============================================================================
+local preDisasterStates = {}
+
+local function BroadcastDisasterEmergency(disasterState)
+    if not Config.UseRsWeatherDisaster then return end
+    
+    local emergencyUrl = (Config.RsWeatherDisaster and Config.RsWeatherDisaster.EmergencyUrl) or 'https://www.youtube.com/watch?v=xeXD7t16v8s'
+    local emergencyVol = (Config.RsWeatherDisaster and Config.RsWeatherDisaster.Volume) or 100
+    local disasterType = (disasterState and disasterState.type) or 'disaster'
+
+    dbg(("🚨 EMERGENCY DISASTER BROADCAST TRIGGERED! Type: %s | URL: %s | Volume: %d"):format(disasterType, emergencyUrl, emergencyVol))
+
+    -- Save current states before disaster overwrite
+    preDisasterStates = {}
+    for locKey, locationTvStates in pairs(tvStates) do
+        preDisasterStates[locKey] = {}
+        for tvId, state in pairs(locationTvStates) do
+            preDisasterStates[locKey][tvId] = {
+                url = state.url,
+                playing = state.playing,
+                time = state.time,
+                volume = state.volume
+            }
+            -- Overwrite with Emergency Warning Stream
+            state.url = emergencyUrl
+            state.playing = true
+            state.time = 0
+            state.volume = emergencyVol
+        end
+    end
+
+    -- Broadcast emergency state update to all connected players
+    TriggerClientEvent('rs_paddock_tv:client:syncAllTvStates', -1, tvStates)
+    SendDiscordLog(0, "ALL", "GLOBAL", 1, 1, "disaster_start", emergencyUrl, emergencyVol)
+end
+
+local function StopDisasterEmergency(disasterState)
+    if not Config.UseRsWeatherDisaster then return end
+
+    dbg("🚨 Emergency Disaster Broadcast Ended. Restoring previous TV states...")
+    local restore = Config.RsWeatherDisaster and Config.RsWeatherDisaster.RestorePreviousState
+
+    if restore and next(preDisasterStates) ~= nil then
+        for locKey, locationTvStates in pairs(tvStates) do
+            if preDisasterStates[locKey] then
+                for tvId, savedState in pairs(preDisasterStates[locKey]) do
+                    tvStates[locKey][tvId] = {
+                        url = savedState.url,
+                        playing = savedState.playing,
+                        time = savedState.time,
+                        volume = savedState.volume
+                    }
+                end
+            end
+        end
+        preDisasterStates = {}
+    else
+        for locKey, locationTvStates in pairs(tvStates) do
+            for tvId, state in pairs(locationTvStates) do
+                state.url = ""
+                state.playing = false
+                state.time = 0
+            end
+        end
+    end
+
+    TriggerClientEvent('rs_paddock_tv:client:syncAllTvStates', -1, tvStates)
+    SendDiscordLog(0, "ALL", "GLOBAL", 1, 1, "disaster_end", "", 0)
+end
+
+-- Listen for rs_weather disaster events
+AddEventHandler('rs-weather:disasterStarted', function(disasterState)
+    BroadcastDisasterEmergency(disasterState)
+end)
+
+AddEventHandler('rs-weather:disasterPhaseChanged', function(disasterState)
+    if next(preDisasterStates) == nil then
+        BroadcastDisasterEmergency(disasterState)
+    end
+end)
+
+AddEventHandler('rs-weather:disasterStopped', function(disasterState)
+    StopDisasterEmergency(disasterState)
+end)
+
 -- Time Tracking Thread (Increments elapsed time for all playing TVs per location)
 Citizen.CreateThread(function()
     while true do
@@ -200,6 +287,12 @@ local function SendDiscordLog(source, locKey, scope, targetTvId, groupId, action
     elseif action == 'volume' then
         title = "🔊 TV Volume Adjusted"
         color = 10181046 -- Purple
+    elseif action == 'disaster_start' then
+        title = "🚨 EMERGENCY DISASTER BROADCAST STARTED"
+        color = 15158332 -- Red Alert
+    elseif action == 'disaster_end' then
+        title = "🟢 EMERGENCY DISASTER BROADCAST CLEARED"
+        color = 3066993 -- Green Restored
     end
 
     local scopeText = ("Single TV (#%d)"):format(targetTvId)

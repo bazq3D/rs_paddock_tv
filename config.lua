@@ -27,6 +27,17 @@ Config.RsRadio = {
 }
 
 -- =============================================================================
+-- 2.2 RETRO STORE WEATHER DISASTER INTEGRATION (rs_weather Emergency Broadcast)
+-- =============================================================================
+Config.UseRsWeatherDisaster = true      -- Auto-broadcast emergency warning on all TVs when a disaster starts in rs_weather
+Config.RsWeatherDisaster = {
+    -- Emergency Warning Stream URL played across all TVs during a disaster (e.g. Tsunami / Tornado Siren)
+    EmergencyUrl = 'https://www.youtube.com/watch?v=xeXD7t16v8s',
+    Volume = 100,                        -- Emergency broadcast volume level (0 to 100, default: 100 max volume)
+    RestorePreviousState = true          -- Automatically restore previous stream states when the disaster ends
+}
+
+-- =============================================================================
 -- 3. PERMISSIONS & ACCESS CONTROL
 -- =============================================================================
 Config.Permissions = {
