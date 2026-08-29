@@ -113,4 +113,5 @@ Config.Commands = {
 ## 📄 License & Credits
 
 - Developed by **bazq**.
+- Special thanks to **Cody Raves** for the 3-layer FiveM DUI YouTube embed technique & guide.
 - Distributed under the [MIT License](LICENSE).
