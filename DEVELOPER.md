@@ -109,6 +109,21 @@ Supported Inventories: `ox_inventory`, `qb-inventory`, `esx`, `devix-inventory`,
 
 ---
 
+### 7. Retro Store Radio (`rs_radio`) Integration
+When `Config.UseRsRadio = true` and `rs_radio` is running, the server automatically registers persistent static audio emitters for all 5 Paddock locations via `exports.rs_radio:createStaticEmitter(spec)`. Listens for `onResourceStart` of `rs_radio` to re-initialize static emitters seamlessly on server restarts.
+
+---
+
+### 8. Retro Store Weather (`rs_weather`) Disaster Integration
+When `Config.UseRsWeatherDisaster = true` and a natural disaster starts in `rs_weather` (`tsunami`, `tornado`):
+- `rs-weather:disasterStarted` and `rs-weather:disasterPhaseChanged` events trigger `BroadcastDisasterEmergency(disasterState)`.
+- Automatically overrides all 7 TVs across all locations with the Emergency Disaster Warning YouTube feed (`https://www.youtube.com/watch?v=xeXD7t16v8s`) at 100% volume (`Config.RsWeatherDisaster.Volume`).
+- Activates MLO EntitySets (`rs_paddock_tv_app1..7`) to illuminate screens and lights during emergency.
+- Saves pre-disaster video stream states and restores them when `rs-weather:disasterStopped` fires.
+- Includes `/testdisaster [start / stop]` admin test command.
+
+---
+
 ## 🛠️ Credits
 
 - Codebase & Architecture by **bazq**.
