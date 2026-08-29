@@ -40,9 +40,10 @@ window.addEventListener('message', function(event) {
             var existingIframe = container.querySelector('iframe');
             if (currentVideoId !== videoId || !existingIframe) {
                 currentVideoId = videoId;
-                // Critical CEF Fix: mute=1 in URL lets Chromium start video playback without autoplay block
+                // Optimized embed parameters to completely strip YouTube branding, controls, and title overlays
                 var embedUrl = "https://www.youtube-nocookie.com/embed/" + videoId + 
-                    "?autoplay=1&mute=1&controls=0&enablejsapi=1&rel=0&showinfo=0&iv_load_policy=3&loop=1&playlist=" + videoId + 
+                    "?autoplay=1&mute=1&controls=0&enablejsapi=1&rel=0&showinfo=0&iv_load_policy=3" + 
+                    "&modestbranding=1&disablekb=1&fs=0&playsinline=1&autohide=1&color=white&loop=1&playlist=" + videoId + 
                     "&start=" + startTime;
                 
                 container.innerHTML = '<iframe src="' + embedUrl + '" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
