@@ -174,6 +174,37 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- Admin / Dev Test Command to trigger/stop Emergency Disaster Broadcast
+RegisterCommand('testdisaster', function(source, args, rawCommand)
+    local src = source
+    local action = args[1] and args[1]:lower() or 'start'
+
+    if src > 0 and not Framework.HasPermission(src) then
+        TriggerClientEvent('rs_paddock_tv:client:showNotification', src, _L('no_permission'), 'error')
+        return
+    end
+
+    if action == 'start' or action == 'on' then
+        dbg(("Test disaster broadcast started by player/console #%d"):format(src))
+        BroadcastDisasterEmergency({ type = 'test_disaster' })
+        if src > 0 then
+            TriggerClientEvent('rs_paddock_tv:client:showNotification', src, "🚨 Disaster Emergency Broadcast STARTED on all TVs!", 'success')
+        end
+    elseif action == 'stop' or action == 'off' or action == 'clear' then
+        dbg(("Test disaster broadcast stopped by player/console #%d"):format(src))
+        StopDisasterEmergency({ type = 'test_disaster' })
+        if src > 0 then
+            TriggerClientEvent('rs_paddock_tv:client:showNotification', src, "🟢 Disaster Emergency Broadcast STOPPED. TV states restored!", 'success')
+        end
+    else
+        if src > 0 then
+            TriggerClientEvent('rs_paddock_tv:client:showNotification', src, "Usage: /testdisaster [start / stop]", 'primary')
+        else
+            print("^3[bazq-rs_paddock_tv] Usage: testdisaster [start / stop]^7")
+        end
+    end
+end, false)
+
 -- Time Tracking Thread (Increments elapsed time for all playing TVs per location)
 Citizen.CreateThread(function()
     while true do
