@@ -122,8 +122,14 @@ function applyLocalesToUI() {
     if (modalCancelBtn) modalCancelBtn.innerText = _L('ui_cancel_btn', 'CANCEL');
 }
 
+var enableOverwriteConfirmation = true;
+
 // Confirmation Modal Dialog Helper Functions
 function showConfirmationModal(titleKey, descKey, onConfirm) {
+    if (!enableOverwriteConfirmation) {
+        if (typeof onConfirm === 'function') onConfirm();
+        return;
+    }
     pendingModalCallback = onConfirm;
     
     var modalTitle = document.getElementById('modal-title');
@@ -258,6 +264,9 @@ window.addEventListener('message', function(event) {
         tvGroupsMap = data.tvGroups || {};
         tvStatesMap = normalizeTvStates(data.tvStates);
         localesMap = data.locales || {};
+        if (data.enableOverwriteConfirmation !== undefined) {
+            enableOverwriteConfirmation = data.enableOverwriteConfirmation;
+        }
 
         applyLocalesToUI();
 

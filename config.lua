@@ -5,6 +5,7 @@ Config = {}
 -- =============================================================================
 Config.Debug = true                     -- Enable console debug prints (dbg() helper)
 Config.Locale = 'en'                    -- Active language: 'en', 'tr', 'de', 'es', 'fr', 'pt', 'it' (Default: 'en')
+Config.EnableOverwriteConfirmation = true -- Prompt overwrite confirmation dialog when changing an active stream (default: true)
 
 -- =============================================================================
 -- 2. DISCORD WEBHOOK LOGGING

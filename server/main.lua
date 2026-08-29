@@ -99,6 +99,18 @@ local function SetupRsRadioEmitters()
     end
 end
 
+-- Listen for live rs_radio song/station change events
+AddEventHandler('rs-radio:songChanged', function(stationId, songData)
+    local title = songData and (songData.title or songData.name or songData.track)
+    local station = songData and (songData.stationName or stationId or "REBEL RADIO SOUTH")
+    if title then
+        TriggerClientEvent('rs_paddock_tv:client:radioTrackData', -1, {
+            trackTitle = title,
+            stationName = station
+        })
+    end
+end)
+
 Citizen.CreateThread(function()
     Wait(1500)
     SetupRsRadioEmitters()

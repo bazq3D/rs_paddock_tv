@@ -220,6 +220,19 @@ RegisterNetEvent('rs_paddock_tv:client:weatherChannelData', function(data)
     end
 end)
 
+-- Receive real-time rs_radio song/station track data pushed from server
+RegisterNetEvent('rs_paddock_tv:client:radioTrackData', function(data)
+    for key, instance in pairs(sharedDuis) do
+        if instance and instance.type == "rs_radio_channel" and instance.duiObject then
+            SendDuiMessage(instance.duiObject, json.encode({
+                type = 'rsradio:data',
+                trackTitle = data.trackTitle or data.title or data.song,
+                stationName = data.stationName or data.station
+            }))
+        end
+    end
+end)
+
 -- Restore original texture when TV is turned off
 local function RestoreTVTexture(tvId)
     if not duiInstancesIsReplaced[tvId] then return end
@@ -487,6 +500,7 @@ RegisterNetEvent('rs_paddock_tv:client:showMenu', function(targetTvId, locKey, l
             tvStates = locTvStates or (tvStates[locKey] or {}),
             locales = activeLocales,
             localeName = currentLang,
+            enableOverwriteConfirmation = (Config.EnableOverwriteConfirmation ~= false),
             locationLabel = closestLoc.label,
             locationCoords = ("%.2f, %.2f, %.2f"):format(closestLoc.coords.x, closestLoc.coords.y, closestLoc.coords.z)
         })
