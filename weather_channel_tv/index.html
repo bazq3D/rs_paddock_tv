@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RS Weather Channel</title>
+<!--
+  RS Weather Channel — standalone TV broadcast page.
+
+  Plugs into an RS Weather server's read-only feed:
+    http://<server-ip>:30120/rs_weather/channel/data
+
+  Configure it in the SETTINGS block at the top of app.js.
+  See README.md for the two ways to feed it data.
+-->
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="tv" class="wx-sun">
+  <header>
+    <div class="brand">
+      <span class="brand-badge">RS</span>
+      <span class="brand-name">WEATHER<em>CHANNEL</em></span>
+    </div>
+    <div class="strap" id="strap">LOCAL FORECAST</div>
+    <div class="clockbox">
+      <div id="clock">--:--</div>
+      <div id="clock-sub">San Andreas</div>
+    </div>
+  </header>
+
+  <div id="alertbar" hidden>
+    <span class="sig">&#9888;</span>
+    <span id="alert-text"></span>
+  </div>
+
+  <main>
+    <div id="feed-badge" hidden>DEMO FEED</div>
+    <section id="panel">
+      <div class="now-col">
+        <div class="kicker">Current Conditions</div>
+        <h1 id="region-name">&nbsp;</h1>
+        <div class="cond-row">
+          <span id="cond-icon"></span>
+          <span id="cond-label"></span>
+        </div>
+        <div class="temp-row">
+          <span id="temp-now"></span>
+          <div class="hilo" id="hilo"></div>
+        </div>
+        <div id="next-line" hidden></div>
+      </div>
+      <div class="fc-col">
+        <div class="kicker">Regional Forecast</div>
+        <ol id="fc-list"></ol>
+      </div>
+    </section>
+    <div class="dots" id="dots"></div>
+  </main>
+
+  <footer><div class="tick-track" id="ticker"></div></footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+/* RS Weather Channel — TV broadcast page styles. All sizes use vh/vw so the
+   page scales to whatever texture/DUI size the TV renders at. */
+
+:root {
+  --navy-0: #071633;
+  --navy-1: #0d2a5c;
+  --navy-2: #164a8f;
+  --amber: #f5a623;
+  --amber-deep: #d97f06;
+  --ink: #eef4ff;
+  --ink-dim: #a9bedf;
+  --alert: #c0181f;
+  --alert-deep: #7d0a10;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  background: #000;
+  color: var(--ink);
+}
+
+#tv {
+  position: relative;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  background: linear-gradient(165deg, var(--navy-1) 0%, var(--navy-0) 62%, #04101f 100%);
+  transition: background 1.2s ease;
+}
+/* subtle per-weather tinting of the studio backdrop */
+#tv.wx-rain    { background: linear-gradient(165deg, #0c2547 0%, #071a33 62%, #030d1c 100%); }
+#tv.wx-thunder { background: linear-gradient(165deg, #1a1b3d 0%, #0d0f27 62%, #060714 100%); }
+#tv.wx-snow    { background: linear-gradient(165deg, #24476e 0%, #12294a 62%, #081627 100%); }
+#tv.wx-fog     { background: linear-gradient(165deg, #2b3d55 0%, #16233a 62%, #0a1220 100%); }
+#tv.wx-cloud   { background: linear-gradient(165deg, #14355f 0%, #0a2140 62%, #04101f 100%); }
+#tv.wx-sun     { background: linear-gradient(165deg, #10407e 0%, #0a2a58 62%, #041226 100%); }
+#tv.alerting   { background: linear-gradient(165deg, #3d0d14 0%, #240509 62%, #12030a 100%); }
+
+/* faint vignette for the TV look */
+#tv::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.38) 100%);
+}
+
+/* ---------- header ---------- */
+header {
+  display: flex; align-items: stretch; flex: 0 0 auto;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02));
+  border-bottom: 0.3vh solid var(--amber);
+  padding: 1.2vh 2.2vw;
+  gap: 2vw;
+}
+.brand { display: flex; align-items: center; gap: 0.9vw; min-width: 0; }
+.brand-badge {
+  background: linear-gradient(180deg, var(--amber), var(--amber-deep));
+  color: #1b1206; font-weight: 800; font-size: 3.4vh; line-height: 1;
+  padding: 1.1vh 0.8vw; border-radius: 0.6vh;
+  letter-spacing: 0.05em;
+}
+.brand-name { font-weight: 800; font-size: 3.2vh; letter-spacing: 0.14em; white-space: nowrap; }
+.brand-name em { font-style: normal; color: var(--amber); }
+.strap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-size: 2.4vh; font-weight: 600; letter-spacing: 0.45em; text-indent: 0.45em;
+  color: var(--ink-dim); text-transform: uppercase; white-space: nowrap; overflow: hidden;
+}
+.clockbox { text-align: right; display: flex; flex-direction: column; justify-content: center; }
+#clock { font-size: 4.2vh; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+#clock-sub { font-size: 1.7vh; color: var(--ink-dim); letter-spacing: 0.28em; text-transform: uppercase; margin-top: 0.5vh; }
+
+/* ---------- alert bar ---------- */
+#alertbar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 1.2vw;
+  background: linear-gradient(180deg, var(--alert), var(--alert-deep));
+  color: #fff; font-weight: 800; letter-spacing: 0.08em;
+  font-size: 2.6vh; padding: 1.1vh 2.2vw;
+  border-bottom: 0.3vh solid #ff8a8a;
+  text-transform: uppercase;
+  animation: alertPulse 1.6s ease-in-out infinite;
+}
+#alertbar[hidden] { display: none; }
+#alertbar .sig { font-size: 3vh; animation: sigBlink 1.1s steps(2, start) infinite; }
+@keyframes alertPulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+@keyframes sigBlink { 50% { opacity: 0.25; } }
+
+/* ---------- stage ---------- */
+main {
+  flex: 1 1 auto; position: relative;
+  display: flex; flex-direction: column;
+  padding: 3vh 3vw 1.5vh;
+  min-height: 0;
+}
+#panel {
+  flex: 1 1 auto; min-height: 0;
+  display: grid; grid-template-columns: 1.25fr 1fr; gap: 3vw;
+  opacity: 1; transform: translateX(0);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+#panel.swapping { opacity: 0; transform: translateX(-2.5vw); }
+
+.kicker {
+  font-size: 1.9vh; letter-spacing: 0.4em; text-transform: uppercase;
+  color: var(--amber); font-weight: 700; margin-bottom: 1.4vh;
+}
+#region-name {
+  font-size: 7.4vh; font-weight: 800; letter-spacing: 0.03em; line-height: 1.02;
+  text-transform: uppercase;
+  text-shadow: 0 0.5vh 2vh rgba(0,0,0,0.45);
+}
+.cond-row { display: flex; align-items: center; gap: 1.4vw; margin-top: 2.4vh; }
+#cond-icon { font-size: 10vh; line-height: 1; filter: drop-shadow(0 0.6vh 1.4vh rgba(0,0,0,0.4)); }
+#cond-label { font-size: 4.6vh; font-weight: 600; }
+.temp-row { display: flex; align-items: baseline; gap: 2vw; margin-top: 1.6vh; }
+#temp-now { font-size: 13vh; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.hilo { font-size: 2.4vh; color: var(--ink-dim); line-height: 1.7; }
+.hilo b { color: var(--ink); font-variant-numeric: tabular-nums; }
+#next-line {
+  margin-top: 2.6vh; font-size: 2.6vh; color: var(--ink);
+  background: rgba(255,255,255,0.07);
+  border-left: 0.5vw solid var(--amber);
+  padding: 1.2vh 1.2vw; border-radius: 0 0.8vh 0.8vh 0;
+  max-width: 90%;
+}
+#next-line b { color: var(--amber); text-transform: capitalize; }
+
+.fc-col { display: flex; flex-direction: column; min-height: 0; }
+#fc-list { list-style: none; display: flex; flex-direction: column; gap: 1.2vh; overflow: hidden; }
+#fc-list li {
+  display: grid; grid-template-columns: 5.2vw 4.6vh 1fr auto; align-items: center; gap: 1.1vw;
+  background: rgba(255,255,255,0.07);
+  border-radius: 0.9vh; padding: 1.25vh 1.1vw;
+  font-size: 2.6vh;
+}
+#fc-list li:first-child { background: rgba(245,166,35,0.16); outline: 0.2vh solid rgba(245,166,35,0.45); }
+.fc-time { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fc-icon { font-size: 3.6vh; text-align: center; }
+.fc-cond { text-transform: capitalize; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-temp { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--amber); }
+.fc-empty { color: var(--ink-dim); font-size: 2.4vh; padding: 1vh 0; }
+
+.dots { flex: 0 0 auto; display: flex; justify-content: center; gap: 0.8vw; padding: 1.6vh 0 0.4vh; }
+.dots span {
+  width: 1.5vh; height: 1.5vh; border-radius: 50%;
+  background: rgba(255,255,255,0.25); transition: background 0.3s ease, transform 0.3s ease;
+}
+.dots span.on { background: var(--amber); transform: scale(1.25); }
+
+/* ---------- ticker ---------- */
+footer {
+  flex: 0 0 auto;
+  background: linear-gradient(180deg, var(--amber), var(--amber-deep));
+  color: #221302; font-weight: 700; font-size: 2.7vh;
+  overflow: hidden; white-space: nowrap;
+  border-top: 0.3vh solid #ffd489;
+  padding: 1.15vh 0;
+}
+#tv.alerting footer {
+  background: linear-gradient(180deg, var(--alert), var(--alert-deep));
+  color: #fff; border-top-color: #ff8a8a;
+}
+.tick-track { display: inline-block; padding-left: 100%; animation: tick 38s linear infinite; }
+@keyframes tick { to { transform: translateX(-100%); } }
+
+/* ---------- feed badge ---------- */
+#feed-badge {
+  position: absolute; top: 1.4vh; right: 1vw;
+  font-size: 1.6vh; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-dim); background: rgba(0,0,0,0.35);
+  padding: 0.6vh 0.8vw; border-radius: 0.6vh;
+}
+#feed-badge[hidden] { display: none; }
