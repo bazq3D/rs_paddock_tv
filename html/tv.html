@@ -13,16 +13,14 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        #player-wrapper {
+        .tv-video {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             overflow: hidden;
+            background: #000000;
             pointer-events: none;
         }
-        #player-wrapper iframe, #player {
+        .tv-video iframe {
             position: absolute;
             top: -14%;
             left: -14%;
@@ -34,13 +32,23 @@
             user-select: none;
             -webkit-user-select: none;
         }
+        /* Black overlay to mask the initial 1.4s YouTube title card load flash */
+        #black-overlay {
+            position: absolute;
+            inset: 0;
+            background: #000000;
+            z-index: 99;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
-    <div id="player-wrapper">
-        <div id="player"></div>
+    <div class="tv-video">
+        <iframe id="yt" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin" frameborder="0"></iframe>
     </div>
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <div id="black-overlay"></div>
     <script src="tv.js"></script>
 </body>
 </html>

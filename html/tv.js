@@ -1,127 +1,135 @@
-var player = null;
-var isApiReady = false;
-var pendingPlayData = null;
 var currentVideoId = "";
+var resourceName = "rs_paddock_tv";
 
-// YouTube IFrame API Ready Callback
-function onYouTubeIframeAPIReady() {
-    isApiReady = true;
-    if (pendingPlayData) {
-        initPlayer(pendingPlayData.videoId, pendingPlayData.startTime, pendingPlayData.volume);
-        pendingPlayData = null;
+// Extract resource name from URL params if present
+(function() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('resource')) {
+            resourceName = params.get('resource');
+        }
+    } catch(e) {}
+})();
+
+// Helper function to extract video ID from any YouTube URL format (watch, shorts, live, embed, youtu.be)
+function youtubeVideoId(url) {
+    var value = String(url || "").trim();
+    if (!value) return "";
+    try {
+        var parsed = new URL(value);
+        var host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+        if (host === "youtu.be") return parsed.pathname.split("/").filter(Boolean)[0] || "";
+        if (host === "youtube.com" || host === "m.youtube.com" || host === "youtube-nocookie.com") {
+            var direct = parsed.searchParams.get("v");
+            if (direct) return direct;
+            var parts = parsed.pathname.split("/").filter(Boolean);
+            if (parts[0] === "embed" || parts[0] === "shorts" || parts[0] === "live") return parts[1] || "";
+        }
+    } catch (e) {}
+    var m = value.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{6,})/i);
+    return m ? m[1] : "";
+}
+
+// Build clean chromeless YouTube embed URL with NUI origin
+function youtubeEmbedUrl(url, resName, startTime) {
+    var id = youtubeVideoId(url);
+    if (!id) return "";
+    var origin = "https://cfx-nui-" + resName;
+    var params = new URLSearchParams({
+        autoplay: "1",
+        mute: "1",
+        controls: "0",
+        loop: "1",
+        playlist: id,
+        playsinline: "1",
+        modestbranding: "1",
+        rel: "0",
+        iv_load_policy: "3",
+        disablekb: "1",
+        enablejsapi: "1",
+        origin: origin,
+        widget_referrer: origin
+    });
+    if (startTime && startTime > 0) {
+        params.set("start", Math.floor(startTime));
+    }
+    return "https://www.youtube.com/embed/" + encodeURIComponent(id) + "?" + params.toString();
+}
+
+// Send postMessage command to YouTube iframe player
+function sendCommand(func, args) {
+    var iframe = document.getElementById("yt");
+    if (iframe && iframe.contentWindow) {
+        try {
+            iframe.contentWindow.postMessage(JSON.stringify({
+                event: "command",
+                func: func,
+                args: args || []
+            }), "*");
+        } catch (e) {}
     }
 }
 
-// Extract YouTube Video ID from standard YouTube URL
-function getYoutubeId(url) {
-    if (!url) return "";
-    var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    var match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : url;
-}
+// Show video iframe and fade out black mask overlay
+function showVideo(embedUrl, volume) {
+    var iframe = document.getElementById("yt");
+    var overlay = document.getElementById("black-overlay");
+    if (!iframe) return;
 
-// Initialize YouTube IFrame Player Instance
-function initPlayer(videoId, startTime, volume) {
-    currentVideoId = videoId;
+    if (overlay) overlay.style.opacity = "1";
+    iframe.src = embedUrl;
+
     var vol = volume !== undefined ? volume : 30;
 
-    if (player && typeof player.destroy === 'function') {
-        try { player.destroy(); } catch (e) {}
-    }
-
-    player = new YT.Player('player', {
-        videoId: videoId,
-        playerVars: {
-            'autoplay': 1,
-            'mute': 1,
-            'controls': 0,
-            'showinfo': 0,
-            'rel': 0,
-            'modestbranding': 1,
-            'disablekb': 1,
-            'fs': 0,
-            'iv_load_policy': 3,
-            'playsinline': 1,
-            'enablejsapi': 1,
-            'autohide': 1,
-            'start': startTime || 0,
-            'loop': 1,
-            'playlist': videoId
-        },
-        events: {
-            'onReady': function(event) {
-                event.target.playVideo();
-                setTimeout(function() {
-                    if (event.target && typeof event.target.unMute === 'function') {
-                        event.target.unMute();
-                        event.target.setVolume(vol);
-                        event.target.playVideo();
-                    }
-                }, 350);
-            },
-            'onStateChange': function(event) {
-                // If video ends or pauses unexpectedly, auto-resume playback
-                if (event.data === 0) { // YT.PlayerState.ENDED
-                    event.target.playVideo();
-                }
-            }
-        }
-    });
+    // Unmute & set volume after load, then fade out black mask overlay
+    setTimeout(function() {
+        sendCommand("unMute");
+        sendCommand("setVolume", [vol]);
+        sendCommand("playVideo");
+        if (overlay) overlay.style.opacity = "0";
+    }, 1400);
 }
 
-// FiveM DUI Event Listener
-window.addEventListener('message', function(event) {
+// NUI DUI Event Listener
+window.addEventListener("message", function(event) {
     var data = event.data;
     if (!data || !data.action) return;
 
-    if (data.action === 'play') {
-        var videoId = getYoutubeId(data.url);
-        if (!videoId) return;
+    if (data.action === "play") {
+        var vId = youtubeVideoId(data.url);
+        if (!vId) return;
 
-        var startTime = data.time || 0;
         var vol = data.volume !== undefined ? data.volume : 30;
 
-        if (!isApiReady) {
-            pendingPlayData = { videoId: videoId, startTime: startTime, volume: vol };
-            return;
-        }
-
-        if (currentVideoId !== videoId || !player) {
-            initPlayer(videoId, startTime, vol);
+        if (currentVideoId !== vId) {
+            currentVideoId = vId;
+            var embedUrl = youtubeEmbedUrl(data.url, resourceName, data.time);
+            showVideo(embedUrl, vol);
         } else {
-            if (player && typeof player.playVideo === 'function') {
-                player.unMute();
-                player.setVolume(vol);
-                player.playVideo();
-            }
+            sendCommand("unMute");
+            sendCommand("setVolume", [vol]);
+            sendCommand("playVideo");
         }
-    } else if (data.action === 'stop') {
+    } else if (data.action === "stop") {
         currentVideoId = "";
-        if (player && typeof player.stopVideo === 'function') {
-            player.stopVideo();
-        }
-    } else if (data.action === 'pause') {
-        if (player && typeof player.pauseVideo === 'function') {
-            player.pauseVideo();
-        }
-    } else if (data.action === 'resume') {
-        if (player && typeof player.playVideo === 'function') {
-            player.unMute();
-            player.playVideo();
-        }
-    } else if (data.action === 'setVolume') {
+        var iframe = document.getElementById("yt");
+        if (iframe) iframe.src = "about:blank";
+        var overlay = document.getElementById("black-overlay");
+        if (overlay) overlay.style.opacity = "1";
+    } else if (data.action === "pause") {
+        sendCommand("pauseVideo");
+    } else if (data.action === "resume") {
+        sendCommand("unMute");
+        sendCommand("playVideo");
+    } else if (data.action === "setVolume") {
         var targetVol = data.volume !== undefined ? data.volume : 30;
-        if (player && typeof player.setVolume === 'function') {
-            player.setVolume(targetVol);
-            if (targetVol > 0) {
-                player.unMute();
-            } else {
-                player.mute();
-            }
+        sendCommand("setVolume", [targetVol]);
+        if (targetVol > 0) {
+            sendCommand("unMute");
+        } else {
+            sendCommand("mute");
         }
-    } else if (data.action === 'seek') {
-        if (player && typeof player.seekTo === 'function') {
-            player.seekTo(data.time || 0, true);
-        }
+    } else if (data.action === "seek") {
+        sendCommand("seekTo", [data.time || 0, true]);
     }
 });

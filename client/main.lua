@@ -109,7 +109,7 @@ local function GetOrCreateSharedDui(streamKey, streamUrl, streamTime)
     local resourceName = GetCurrentResourceName()
     local duiUrl = isWeatherChannel 
         and ("https://cfx-nui-%s/html/weather_channel/index.html"):format(resourceName)
-        or ("https://cfx-nui-%s/html/tv.html"):format(resourceName)
+        or ("https://cfx-nui-%s/html/tv.html?resource=%s"):format(resourceName, resourceName)
 
     local safeKey = string.gsub(streamKey, "[^%w_]", "_")
     local runtimeTxdName = ("paddock_tv_shared_txd_%s"):format(safeKey)
