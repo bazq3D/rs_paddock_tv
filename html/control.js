@@ -8,6 +8,28 @@ var tvStatesMap = {};
 var localesMap = {};
 var pendingModalCallback = null;
 
+// Normalize 1-based Lua Array / JS Dictionary to 1-indexed tvStatesMap
+function normalizeTvStates(rawStates) {
+    var resultMap = {};
+    if (!rawStates) return resultMap;
+
+    if (Array.isArray(rawStates)) {
+        for (var i = 0; i < rawStates.length; i++) {
+            resultMap[i + 1] = rawStates[i];
+        }
+    } else if (typeof rawStates === 'object') {
+        for (var key in rawStates) {
+            var tvNum = parseInt(key);
+            if (!isNaN(tvNum)) {
+                resultMap[tvNum] = rawStates[key];
+            } else {
+                resultMap[key] = rawStates[key];
+            }
+        }
+    }
+    return resultMap;
+}
+
 // Locale Helper Function
 function _L(key, defaultText) {
     if (localesMap && localesMap[key]) {
@@ -231,7 +253,7 @@ window.addEventListener('message', function(event) {
         currentLocationKey = data.locationKey || null;
         tvListMap = data.tvList || {};
         tvGroupsMap = data.tvGroups || {};
-        tvStatesMap = data.tvStates || {};
+        tvStatesMap = normalizeTvStates(data.tvStates);
         localesMap = data.locales || {};
 
         applyLocalesToUI();
@@ -249,9 +271,11 @@ window.addEventListener('message', function(event) {
 
     } else if (data.action === 'syncState') {
         if (data.tvStates) {
-            tvStatesMap = data.tvStates;
-        } else if (data.tvId && data.state) {
-            tvStatesMap[data.tvId] = data.state;
+            tvStatesMap = normalizeTvStates(data.tvStates);
+        }
+        if (data.tvId && data.state) {
+            var targetNum = parseInt(data.tvId);
+            tvStatesMap[targetNum] = data.state;
         }
         renderTvMatrix();
         if (document.getElementById('ui-wrapper').style.display === 'flex') {
@@ -259,7 +283,7 @@ window.addEventListener('message', function(event) {
         }
     } else if (data.action === 'syncAllStates') {
         if (data.tvStates) {
-            tvStatesMap = data.tvStates;
+            tvStatesMap = normalizeTvStates(data.tvStates);
             renderTvMatrix();
             if (document.getElementById('ui-wrapper').style.display === 'flex') {
                 updateUIStateForCurrentScope();
@@ -303,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
             action: 'show',
             tvList: mockTvList,
             tvGroups: mockTvGroups,
-            selectedTvId: 5,
+            selectedTvId: 3,
             tvStates: mockStates,
             locationLabel: "RS Paddock // Del Pierro",
             locationCoords: "-2202.10, -392.15, 15.08"
@@ -606,8 +630,8 @@ volumeSlider.addEventListener('input', function() {
 // Sunucuya Durum Güncelleme İsteği Gönderme / Web İnceleme Fallback
 function updateTVState(data) {
     if (data.tvId) {
-        currentTvId = data.tvId;
-        currentGroupId = (data.tvId >= 5 && data.tvId <= 7) ? 2 : 1;
+        currentTvId = parseInt(data.tvId);
+        currentGroupId = (currentTvId >= 5 && currentTvId <= 7) ? 2 : 1;
     }
     data.targetScope = currentScope;
     data.tvId = currentTvId;
