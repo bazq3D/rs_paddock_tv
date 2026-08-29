@@ -48,6 +48,9 @@ escrow_ignore {
     'html/tv.html',
     'html/style.css',
     'html/tv.js',
+    'html/weather_channel/index.html',
+    'html/weather_channel/style.css',
+    'html/weather_channel/app.js',
     'README.md',
     'DEVELOPER.md'
 }

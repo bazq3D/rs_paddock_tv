@@ -1,4 +1,3 @@
-local duiInstances = {}
 local tvStates = {}
 
 -- bazq style local debug print helper
