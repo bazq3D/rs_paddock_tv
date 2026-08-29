@@ -112,4 +112,4 @@ Config.Commands = {
 ## 📄 License & Credits
 
 - Developed by **bazq**.
-- Open Source License.
+- Distributed under the [MIT License](LICENSE).
