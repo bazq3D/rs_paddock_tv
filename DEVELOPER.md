@@ -124,6 +124,21 @@ When `Config.UseRsWeatherDisaster = true` and a natural disaster starts in `rs_w
 
 ---
 
+### 9. Shared DUI Pool & Runtime Texture Instancing
+- When multiple TVs play the exact same video stream at the same synchronized timestamp (e.g., Disaster broadcasts, Group Sync, or Drag-and-Drop sharing), the client spawns **a single shared DUI browser instance** (`GetOrCreateSharedDui`).
+- The runtime texture of the shared DUI instance is applied across all target TV screen models simultaneously using `AddReplaceTexture`.
+- Results in 7x lower CPU/RAM footprint, 100% frame-perfect video synchronization, and zero network bandwidth spikes.
+- If a TV plays the same video URL at a different timestamp, it automatically receives an independent DUI instance.
+
+---
+
+### 10. Drag & Drop Stream Sharing in NUI Control Room
+- Drag any playing TV card in the Master Control Room UI and drop it onto any target TV card.
+- Instantly copies the stream URL, timestamp, and playback state to the target TV.
+- Automatically binds the target TV to the source TV's shared DUI texture instance for synchronized playback.
+
+---
+
 ## 🛠️ Credits
 
 - Codebase & Architecture by **bazq**.

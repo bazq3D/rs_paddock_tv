@@ -418,6 +418,53 @@ function createTvCard(tvId) {
         updateUIStateForCurrentScope();
     });
 
+    // Drag & Drop Stream Sharing between TV Cards
+    card.setAttribute('draggable', 'true');
+
+    card.addEventListener('dragstart', function(e) {
+        e.dataTransfer.setData('text/plain', tvId);
+        e.dataTransfer.effectAllowed = 'copy';
+        card.classList.add('dragging');
+    });
+
+    card.addEventListener('dragend', function() {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.tv-card').forEach(function(c) {
+            c.classList.remove('drag-hover');
+        });
+    });
+
+    card.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        card.classList.add('drag-hover');
+    });
+
+    card.addEventListener('dragleave', function() {
+        card.classList.remove('drag-hover');
+    });
+
+    card.addEventListener('drop', function(e) {
+        e.preventDefault();
+        card.classList.remove('drag-hover');
+        card.classList.remove('dragging');
+
+        var sourceTvId = parseInt(e.dataTransfer.getData('text/plain'));
+        if (sourceTvId && sourceTvId !== tvId) {
+            var sourceState = tvStatesMap[sourceTvId];
+            if (sourceState && sourceState.url && sourceState.url !== "") {
+                updateTVState({
+                    targetScope: 'single',
+                    tvId: tvId,
+                    action: 'play',
+                    url: sourceState.url,
+                    time: sourceState.time || 0,
+                    volume: sourceState.volume || 30
+                });
+            }
+        }
+    });
+
     // Kart içi bağımsız TV Ses Slider Dinleyicisi
     var slider = card.querySelector('.card-vol-slider');
     var textVal = card.querySelector('.card-vol-text');

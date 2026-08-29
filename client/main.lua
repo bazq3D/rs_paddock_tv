@@ -75,64 +75,96 @@ local function SyncTvEntitySets(locKey, closestLoc)
     end
 end
 
--- Create or retrieve DUI instance for a specific TV screen
-local function GetOrCreateTvDui(tvId, streamUrl)
-    local isWeatherChannel = (streamUrl == "weather_channel")
-    local targetType = isWeatherChannel and "weather_channel" or "youtube"
+-- Shared DUI Browser Pool (Maps streamKey -> Shared DUI Instance)
+local sharedDuis = {}
+local activeTvDuiKeys = {}
+local duiInstancesIsReplaced = {}
 
-    if duiInstances[tvId] then
-        if streamUrl == nil or duiInstances[tvId].type == targetType then
-            return duiInstances[tvId]
-        else
-            if duiInstances[tvId].duiObject then
-                DestroyDui(duiInstances[tvId].duiObject)
-            end
-            duiInstances[tvId] = nil
-        end
+local function ExtractYoutubeId(url)
+    if not url or url == "" then return "" end
+    local videoId = string.match(url, "v=([%w_%-]+)") or string.match(url, "youtu%.be/([%w_%-]+)") or url
+    return videoId
+end
+
+local function GetStreamKey(streamUrl, streamTime)
+    if not streamUrl or streamUrl == "" then return nil end
+    if streamUrl == "weather_channel" then
+        return "weather_channel"
     end
 
-    local tvConfig = Config.TVs[tvId]
-    if not tvConfig then return nil end
+    local videoId = ExtractYoutubeId(streamUrl)
+    local t = tonumber(streamTime) or 0
+    -- Bucket timestamp into 10-second sync windows so synchronized TVs share the exact same DUI
+    local timeBucket = math.floor(t / 10) * 10
+    return ("yt_%s_t%d"):format(videoId, timeBucket)
+end
 
+local function GetOrCreateSharedDui(streamKey, streamUrl, streamTime)
+    if not streamKey then return nil end
+
+    if sharedDuis[streamKey] and sharedDuis[streamKey].duiObject then
+        return sharedDuis[streamKey]
+    end
+
+    local isWeatherChannel = (streamUrl == "weather_channel")
     local resourceName = GetCurrentResourceName()
     local duiUrl = isWeatherChannel 
         and ("https://cfx-nui-%s/html/weather_channel/index.html"):format(resourceName)
         or ("https://cfx-nui-%s/html/tv.html"):format(resourceName)
-    
-    dbg(("Initializing DUI [TV #%d | Type: %s]: %s"):format(tvId, targetType, duiUrl))
+
+    local safeKey = string.gsub(streamKey, "[^%w_]", "_")
+    local runtimeTxdName = ("paddock_tv_shared_txd_%s"):format(safeKey)
+    local runtimeTxnName = ("paddock_tv_shared_txn_%s"):format(safeKey)
+
+    dbg(("Creating Shared DUI Instance [Key: %s | Type: %s]: %s"):format(streamKey, isWeatherChannel and "weather_channel" or "youtube", duiUrl))
 
     local duiObject = CreateDui(duiUrl, Config.DuiWidth, Config.DuiHeight)
     local duiHandle = GetDuiHandle(duiObject)
 
-    local runtimeTxdName = ("paddock_tv_runtime_txd_%d"):format(tvId)
-    local runtimeTxnName = ("paddock_tv_runtime_txn_%d"):format(tvId)
-
     local txd = CreateRuntimeTxd(runtimeTxdName)
     local texture = CreateRuntimeTextureFromDuiHandle(txd, runtimeTxnName, duiHandle)
 
-    duiInstances[tvId] = {
-        type = targetType,
+    sharedDuis[streamKey] = {
+        key = streamKey,
+        type = isWeatherChannel and "weather_channel" or "youtube",
         duiObject = duiObject,
         duiHandle = duiHandle,
         txd = txd,
         texture = texture,
         runtimeTxdName = runtimeTxdName,
         runtimeTxnName = runtimeTxnName,
-        isReplaced = false,
         isNew = true
     }
 
-    return duiInstances[tvId]
+    return sharedDuis[streamKey]
 end
 
--- Send DUI Message with retry mechanism for newly created browser instances
+local function CleanUnusedSharedDuis()
+    local inUseKeys = {}
+    for tvId, key in pairs(activeTvDuiKeys) do
+        inUseKeys[key] = true
+    end
+
+    for key, instance in pairs(sharedDuis) do
+        if not inUseKeys[key] then
+            dbg(("Destroying unused shared DUI instance [Key: %s]"):format(key))
+            if instance.duiObject then
+                DestroyDui(instance.duiObject)
+            end
+            sharedDuis[key] = nil
+        end
+    end
+end
+
+-- Send DUI Message to shared browser instance
 local function SendDuiAction(tvId, actionData)
-    local instance = GetOrCreateTvDui(tvId, actionData and actionData.url)
+    if not actionData or not actionData.url or actionData.url == "" then return end
+
+    local streamKey = GetStreamKey(actionData.url, actionData.time)
+    local instance = GetOrCreateSharedDui(streamKey, actionData.url, actionData.time)
     if not instance or not instance.duiObject then return end
 
-    if instance.type == "weather_channel" then
-        return
-    end
+    if instance.type == "weather_channel" then return end
 
     local payload = json.encode(actionData)
     SendDuiMessage(instance.duiObject, payload)
@@ -140,13 +172,13 @@ local function SendDuiAction(tvId, actionData)
     if instance.isNew then
         instance.isNew = false
         Citizen.SetTimeout(350, function()
-            if duiInstances[tvId] and duiInstances[tvId].duiObject then
-                SendDuiMessage(duiInstances[tvId].duiObject, payload)
+            if sharedDuis[streamKey] and sharedDuis[streamKey].duiObject then
+                SendDuiMessage(sharedDuis[streamKey].duiObject, payload)
             end
         end)
         Citizen.SetTimeout(700, function()
-            if duiInstances[tvId] and duiInstances[tvId].duiObject then
-                SendDuiMessage(duiInstances[tvId].duiObject, payload)
+            if sharedDuis[streamKey] and sharedDuis[streamKey].duiObject then
+                SendDuiMessage(sharedDuis[streamKey].duiObject, payload)
             end
         end)
     end
@@ -154,7 +186,7 @@ end
 
 -- Receive real-time weather channel data pushed from server
 RegisterNetEvent('rs_paddock_tv:client:weatherChannelData', function(data)
-    for tvId, instance in pairs(duiInstances) do
+    for key, instance in pairs(sharedDuis) do
         if instance and instance.type == "weather_channel" and instance.duiObject then
             SendDuiMessage(instance.duiObject, json.encode({
                 type = 'rsweather:channel:data',
@@ -164,10 +196,45 @@ RegisterNetEvent('rs_paddock_tv:client:weatherChannelData', function(data)
     end
 end)
 
--- Replace target TV texture with DUI runtime texture
-local function ReplaceTVTexture(tvId, streamUrl)
-    local instance = GetOrCreateTvDui(tvId, streamUrl)
-    if not instance or instance.isReplaced then return end
+-- Restore original texture when TV is turned off
+local function RestoreTVTexture(tvId)
+    if not duiInstancesIsReplaced[tvId] then return end
+
+    local tvConfig = Config.TVs[tvId]
+    if not tvConfig then return end
+
+    local targetTxd = tvConfig.txd or "rs_paddock_tvapp_txd"
+    local targetTxn = tvConfig.txn or ("rs_paddock_tvapp%d"):format(tvId)
+
+    RemoveReplaceTexture(targetTxd, targetTxn)
+    RemoveReplaceTexture(targetTxd, tvConfig.model or ("rs_paddock_tv_app%d"):format(tvId))
+
+    if tvConfig.model then
+        RemoveReplaceTexture(tvConfig.model, targetTxn)
+        RemoveReplaceTexture(tvConfig.model, tvConfig.model)
+    end
+
+    activeTvDuiKeys[tvId] = nil
+    duiInstancesIsReplaced[tvId] = false
+    dbg(("Texture restored [TV #%d]"):format(tvId))
+
+    CleanUnusedSharedDuis()
+end
+
+-- Replace target TV texture with Shared DUI runtime texture
+local function ReplaceTVTexture(tvId, streamUrl, streamTime)
+    if not streamUrl or streamUrl == "" then return end
+
+    local streamKey = GetStreamKey(streamUrl, streamTime)
+    local instance = GetOrCreateSharedDui(streamKey, streamUrl, streamTime)
+    if not instance then return end
+
+    local oldKey = activeTvDuiKeys[tvId]
+    if oldKey == streamKey and duiInstancesIsReplaced[tvId] then return end
+
+    if oldKey and oldKey ~= streamKey then
+        RestoreTVTexture(tvId)
+    end
 
     local tvConfig = Config.TVs[tvId]
     if not tvConfig then return end
@@ -185,43 +252,26 @@ local function ReplaceTVTexture(tvId, streamUrl)
         AddReplaceTexture(tvConfig.model, tvConfig.model, instance.runtimeTxdName, instance.runtimeTxnName)
     end
 
-    dbg(("Texture replaced [TV #%d]: %s/%s -> %s/%s"):format(tvId, targetTxd, targetTxn, instance.runtimeTxdName, instance.runtimeTxnName))
-    instance.isReplaced = true
-end
+    activeTvDuiKeys[tvId] = streamKey
+    duiInstancesIsReplaced[tvId] = true
+    dbg(("Shared Texture replaced [TV #%d | Key: %s]: %s/%s -> %s/%s"):format(tvId, streamKey, targetTxd, targetTxn, instance.runtimeTxdName, instance.runtimeTxnName))
 
--- Restore original texture when TV is turned off
-local function RestoreTVTexture(tvId)
-    local instance = duiInstances[tvId]
-    if not instance or not instance.isReplaced then return end
-
-    local tvConfig = Config.TVs[tvId]
-    if not tvConfig then return end
-
-    local targetTxd = tvConfig.txd or "rs_paddock_tvapp_txd"
-    local targetTxn = tvConfig.txn or ("rs_paddock_tvapp%d"):format(tvId)
-
-    RemoveReplaceTexture(targetTxd, targetTxn)
-    RemoveReplaceTexture(targetTxd, tvConfig.model or ("rs_paddock_tv_app%d"):format(tvId))
-
-    if tvConfig.model then
-        RemoveReplaceTexture(tvConfig.model, targetTxn)
-        RemoveReplaceTexture(tvConfig.model, tvConfig.model)
-    end
-
-    dbg(("Texture restored [TV #%d]"):format(tvId))
-    instance.isReplaced = false
+    CleanUnusedSharedDuis()
 end
 
 -- Destroy all DUIs on resource stop
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
-        dbg("Resource stopping, cleaning up all TV DUI instances...")
+        dbg("Resource stopping, cleaning up all shared DUI instances...")
         for tvId, _ in pairs(Config.TVs) do
             RestoreTVTexture(tvId)
-            if duiInstances[tvId] and duiInstances[tvId].duiObject then
-                DestroyDui(duiInstances[tvId].duiObject)
+        end
+        for key, instance in pairs(sharedDuis) do
+            if instance and instance.duiObject then
+                DestroyDui(instance.duiObject)
             end
         end
+        sharedDuis = {}
     end
 end)
 
@@ -268,7 +318,7 @@ Citizen.CreateThread(function()
                 local instance = duiInstances[tvId]
 
                 if state and state.playing and state.url ~= "" then
-                    ReplaceTVTexture(tvId, state.url)
+                    ReplaceTVTexture(tvId, state.url, state.time)
                     
                     local isMasterForAudio = true
                     if Config.MuteDuplicateAudio ~= false and activeMasterTvs[state.url] then
@@ -293,18 +343,12 @@ Citizen.CreateThread(function()
                     })
                 else
                     RestoreTVTexture(tvId)
-                    if instance and instance.duiObject then
-                        SendDuiAction(tvId, { action = 'setVolume', volume = 0 })
-                    end
                 end
             end
         else
-            -- Player far from any Paddock location: restore textures and mute DUIs
+            -- Player far from any Paddock location: restore textures and clean shared DUIs
             for tvId, _ in pairs(Config.TVs) do
                 RestoreTVTexture(tvId)
-                if duiInstances[tvId] and duiInstances[tvId].duiObject then
-                    SendDuiAction(tvId, { action = 'setVolume', volume = 0 })
-                end
             end
         end
     end
