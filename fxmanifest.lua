@@ -29,7 +29,10 @@ files {
     'html/tv.html',
     'html/style.css',
     'html/tv.js',
-    'html/logo.webp'
+    'html/logo.webp',
+    'html/weather_channel/index.html',
+    'html/weather_channel/style.css',
+    'html/weather_channel/app.js'
 }
 
 escrow_ignore {

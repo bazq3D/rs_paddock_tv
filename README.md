@@ -18,7 +18,8 @@ Multi-Screen Independent YouTube DUI Sync TV System created for Paddock MLO maps
 - **Full Inventory Integration:** Auto-detects `ox_inventory`, `qb-inventory`, `esx`, `devix-inventory`, and custom items.
 - **Target Systems:** Auto-detects `ox_target` and `qb-target`.
 - **Retro Store Radio Integration (`rs_radio`):** Native compatibility with `rs_radio`. Automatically registers static audio emitters for all Paddock locations.
-- **Retro Store Weather Integration (`rs_weather`):** Auto-detects natural disaster events (`tsunami`, `tornado`). Automatically overrides all TVs with full-volume Emergency Disaster Warning broadcasts (`https://www.youtube.com/watch?v=xeXD7t16v8s`) and restores pre-disaster video streams when clear!
+- **Retro Store Weather Disaster (`rs_weather`):** Auto-detects natural disaster events (`tsunami`, `tornado`). Automatically overrides all TVs with full-volume Emergency Disaster Warning broadcasts (`https://www.youtube.com/watch?v=xeXD7t16v8s`) and restores pre-disaster video streams when clear!
+- **Retro Store Weather Channel TV (`rs_weather`):** Standalone Weather Channel broadcast page integrated. TV #1 (configurable via `Config.WeatherChannelTvId`) displays live regional weather forecasts, temperatures, and scrolling ticker by default!
 - **Escrow-Ready & Open Source:** Full source code unlocked. Detailed `config.lua` options for permissions (Admin, Job, Gang, Item, Whitelist, MatchMode).
 
 ---

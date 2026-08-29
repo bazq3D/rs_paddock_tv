@@ -9,12 +9,14 @@ end
 local tvStates = {}
 
 local function InitTVStates()
+    local defaultChannelTvId = Config.WeatherChannelTvId or 1
     for locKey, _ in pairs(Config.Locations) do
         tvStates[locKey] = {}
         for tvId, _ in pairs(Config.TVs) do
+            local isDefaultWeatherTv = (Config.UseWeatherChannel and tvId == defaultChannelTvId)
             tvStates[locKey][tvId] = {
-                url = "",
-                playing = false,
+                url = isDefaultWeatherTv and "weather_channel" or "",
+                playing = isDefaultWeatherTv and true or false,
                 time = 0,
                 volume = Config.DefaultVolume
             }
@@ -22,6 +24,25 @@ local function InitTVStates()
     end
 end
 InitTVStates()
+
+-- =============================================================================
+-- RETRO STORE WEATHER CHANNEL DATA PUSH THREAD
+-- =============================================================================
+Citizen.CreateThread(function()
+    while true do
+        Wait(10000)
+        if Config.UseWeatherChannel and GetResourceState('rs_weather') == 'started' then
+            PerformHttpRequest('http://127.0.0.1:30120/rs_weather/channel/data', function(status, body)
+                if status == 200 and body and body ~= "" then
+                    local ok, data = pcall(json.decode, body)
+                    if ok and data then
+                        TriggerClientEvent('rs_paddock_tv:client:weatherChannelData', -1, data)
+                    end
+                end
+            end, 'GET')
+        end
+    end
+end)
 
 -- =============================================================================
 -- RETRO STORE RADIO (rs_radio) INTEGRATION

@@ -76,16 +76,30 @@ local function SyncTvEntitySets(locKey, closestLoc)
 end
 
 -- Create or retrieve DUI instance for a specific TV screen
-local function GetOrCreateTvDui(tvId)
-    if duiInstances[tvId] then return duiInstances[tvId] end
+local function GetOrCreateTvDui(tvId, streamUrl)
+    local isWeatherChannel = (streamUrl == "weather_channel")
+    local targetType = isWeatherChannel and "weather_channel" or "youtube"
+
+    if duiInstances[tvId] then
+        if duiInstances[tvId].type == targetType then
+            return duiInstances[tvId]
+        else
+            if duiInstances[tvId].duiObject then
+                DestroyDui(duiInstances[tvId].duiObject)
+            end
+            duiInstances[tvId] = nil
+        end
+    end
 
     local tvConfig = Config.TVs[tvId]
     if not tvConfig then return nil end
 
     local resourceName = GetCurrentResourceName()
-    local duiUrl = ("https://cfx-nui-%s/html/tv.html"):format(resourceName)
+    local duiUrl = isWeatherChannel 
+        and ("https://cfx-nui-%s/html/weather_channel/index.html"):format(resourceName)
+        or ("https://cfx-nui-%s/html/tv.html"):format(resourceName)
     
-    dbg(("Initializing DUI [TV #%d]: %s"):format(tvId, duiUrl))
+    dbg(("Initializing DUI [TV #%d | Type: %s]: %s"):format(tvId, targetType, duiUrl))
 
     local duiObject = CreateDui(duiUrl, Config.DuiWidth, Config.DuiHeight)
     local duiHandle = GetDuiHandle(duiObject)
@@ -97,6 +111,7 @@ local function GetOrCreateTvDui(tvId)
     local texture = CreateRuntimeTextureFromDuiHandle(txd, runtimeTxnName, duiHandle)
 
     duiInstances[tvId] = {
+        type = targetType,
         duiObject = duiObject,
         duiHandle = duiHandle,
         txd = txd,
@@ -112,8 +127,12 @@ end
 
 -- Send DUI Message with retry mechanism for newly created browser instances
 local function SendDuiAction(tvId, actionData)
-    local instance = GetOrCreateTvDui(tvId)
+    local instance = GetOrCreateTvDui(tvId, actionData.url)
     if not instance or not instance.duiObject then return end
+
+    if instance.type == "weather_channel" then
+        return
+    end
 
     local payload = json.encode(actionData)
     SendDuiMessage(instance.duiObject, payload)
@@ -132,6 +151,18 @@ local function SendDuiAction(tvId, actionData)
         end)
     end
 end
+
+-- Receive real-time weather channel data pushed from server
+RegisterNetEvent('rs_paddock_tv:client:weatherChannelData', function(data)
+    for tvId, instance in pairs(duiInstances) do
+        if instance and instance.type == "weather_channel" and instance.duiObject then
+            SendDuiMessage(instance.duiObject, json.encode({
+                type = 'rsweather:channel:data',
+                data = data
+            }))
+        end
+    end
+end)
 
 -- Replace target texture with DUI runtime texture
 local function ReplaceTVTexture(tvId)

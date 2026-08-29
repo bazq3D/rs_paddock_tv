@@ -61,6 +61,9 @@ function applyLocalesToUI() {
     var btnStopText = document.getElementById('btn-stop-text');
     if (btnStopText) btnStopText.innerText = _L('ui_stop', 'STOP TV');
 
+    var btnWeatherText = document.getElementById('btn-weather-text');
+    if (btnWeatherText) btnWeatherText.innerText = _L('ui_weather_channel', 'WEATHER CHANNEL');
+
     var noFeedText = document.getElementById('no-feed-text');
     if (noFeedText) noFeedText.innerText = _L('ui_no_feed', 'NO ACTIVE VIDEO FEED');
 
@@ -169,7 +172,7 @@ function handleScopeChange(scope, groupId) {
 
     var isAnyTvPlaying = false;
     for (var tvId in tvStatesMap) {
-        if (tvStatesMap[tvId] && tvStatesMap[tvId].playing && tvStatesMap[tvId].url !== "") {
+        if (tvStatesMap[tvId] && tvStatesMap[tvId].playing && tvStatesMap[tvId].url !== "" && tvStatesMap[tvId].url !== "weather_channel") {
             isAnyTvPlaying = true;
             break;
         }
@@ -282,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         var mockStates = {
-            1: { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", playing: true, time: 120, volume: 30 },
+            1: { url: "weather_channel", playing: true, time: 120, volume: 30 },
             2: { url: "", playing: false, time: 0, volume: 30 },
             3: { url: "", playing: false, time: 0, volume: 30 },
             4: { url: "", playing: false, time: 0, volume: 30 },
@@ -338,17 +341,22 @@ function createTvCard(tvId) {
 
     var isLive = state.playing && state.url && state.url !== "";
     var isPaused = !state.playing && state.url && state.url !== "";
+    var isWeather = state.url === "weather_channel";
 
     var badgeClass = isLive ? 'badge-live' : (isPaused ? 'badge-paused' : 'badge-off');
     var dotClass = isLive ? 'dot-live' : (isPaused ? 'dot-paused' : 'dot-off');
-    var statusText = isLive ? 'LIVE' : (isPaused ? 'PAUSE' : 'OFF');
+    var statusText = isLive ? (isWeather ? 'WEATHER' : 'LIVE') : (isPaused ? 'PAUSE' : 'OFF');
 
-    var videoId = getYoutubeId(state.url);
     var previewHtml = "";
-    if (videoId && (isLive || isPaused)) {
-        previewHtml = `<img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" class="tv-card-thumb" alt="TV ${tvId} Feed">`;
+    if (isWeather) {
+        previewHtml = `<div class="tv-card-no-feed" style="background: radial-gradient(circle, #1a233a 0%, #0c101c 100%);"><i class="fa-solid fa-cloud-sun text-gold" style="font-size:20px;"></i><span style="font-size:9px; font-weight:800; color:#d2b78d; margin-top:2px;">RS WEATHER</span></div>`;
     } else {
-        previewHtml = `<div class="tv-card-no-feed"><i class="fa-solid fa-video-slash"></i> NO FEED</div>`;
+        var videoId = getYoutubeId(state.url);
+        if (videoId && (isLive || isPaused)) {
+            previewHtml = `<img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" class="tv-card-thumb" alt="TV ${tvId} Feed">`;
+        } else {
+            previewHtml = `<div class="tv-card-no-feed"><i class="fa-solid fa-video-slash"></i> NO FEED</div>`;
+        }
     }
 
     var volVal = state.volume !== undefined ? state.volume : 30;
@@ -431,8 +439,29 @@ function updateUIStateForCurrentScope() {
 
     var isLive = state.playing && state.url && state.url !== "";
     var isPaused = !state.playing && state.url && state.url !== "";
+    var isWeather = state.url === "weather_channel";
 
-    if (isLive || isPaused) {
+    if (isWeather) {
+        if (iframe) iframe.style.display = 'none';
+        if (placeholder) {
+            placeholder.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; background: radial-gradient(circle, #1a243b 0%, #0a0e1a 100%);">
+                    <i class="fa-solid fa-cloud-sun text-gold" style="font-size:52px; margin-bottom:12px;"></i>
+                    <h3 style="font-family:var(--font-heading); font-size:16px; font-weight:800; color:#ffffff; letter-spacing:1px;">RS WEATHER CHANNEL</h3>
+                    <p style="font-size:11px; font-weight:600; color:var(--accent-gold); margin-top:4px;">LIVE REGIONAL FORECAST BROADCAST</p>
+                    <div class="monitor-scanlines"></div>
+                </div>
+            `;
+            placeholder.style.display = 'flex';
+        }
+        if (input) input.value = "weather_channel";
+
+        badge.className = "monitor-status-badge badge-live";
+        badge.innerHTML = `<span class="status-dot dot-live"></span> WEATHER CHANNEL`;
+        document.getElementById('action-pause').style.display = 'none';
+        document.getElementById('action-resume').style.display = 'none';
+
+    } else if (isLive || isPaused) {
         var videoId = getYoutubeId(state.url);
         if (videoId) {
             var streamImg = "https://img.youtube.com/vi/" + videoId + "/hqdefault.jpg";
@@ -493,7 +522,7 @@ document.getElementById('play-custom-btn').addEventListener('click', function() 
     if (url === '') return;
     
     var state = tvStatesMap[currentTvId];
-    var isLive = state && state.playing && state.url && state.url !== "";
+    var isLive = state && state.playing && state.url && state.url !== "" && state.url !== "weather_channel";
 
     var doPlay = function() {
         updateTVState({
@@ -506,6 +535,25 @@ document.getElementById('play-custom-btn').addEventListener('click', function() 
         showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doPlay);
     } else {
         doPlay();
+    }
+});
+
+document.getElementById('action-weather').addEventListener('click', function() {
+    var state = tvStatesMap[currentTvId];
+    var isLive = state && state.playing && state.url && state.url !== "" && state.url !== "weather_channel";
+
+    var doSwitchWeather = function() {
+        document.getElementById('custom-url-input').value = "weather_channel";
+        updateTVState({
+            action: 'play',
+            url: 'weather_channel'
+        });
+    };
+
+    if (isLive) {
+        showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doSwitchWeather);
+    } else {
+        doSwitchWeather();
     }
 });
 

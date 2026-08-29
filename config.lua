@@ -38,6 +38,18 @@ Config.RsWeatherDisaster = {
 }
 
 -- =============================================================================
+-- 2.3 RETRO STORE WEATHER CHANNEL TV BROADCAST INTEGRATION
+-- =============================================================================
+Config.UseWeatherChannel = true         -- Enable RS Weather Channel stream on Paddock TVs
+Config.WeatherChannelTvId = 1           -- Default TV ID to play Weather Channel broadcast when idle (1..7, default: 1)
+Config.WeatherChannelSettings = {
+    stationName = "RS WEATHER",
+    tagline = "PADDOCK LOCAL FORECAST",
+    cycleSeconds = 12,
+    refreshSeconds = 10
+}
+
+-- =============================================================================
 -- 3. PERMISSIONS & ACCESS CONTROL
 -- =============================================================================
 Config.Permissions = {
