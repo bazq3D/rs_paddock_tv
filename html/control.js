@@ -204,35 +204,7 @@ function handleScopeChange(scope, groupId) {
     }
     updateScopeButtonsUI();
     renderTvMatrix();
-
-    var activeState = tvStatesMap[currentTvId];
-    var inputVal = document.getElementById('custom-url-input') ? document.getElementById('custom-url-input').value.trim() : "";
-    var activeUrl = (activeState && activeState.url && activeState.url !== "") ? activeState.url : inputVal;
-
-    var isAnyTvPlaying = false;
-    for (var tvId in tvStatesMap) {
-        if (tvStatesMap[tvId] && tvStatesMap[tvId].playing && tvStatesMap[tvId].url !== "" && tvStatesMap[tvId].url !== "weather_channel") {
-            isAnyTvPlaying = true;
-            break;
-        }
-    }
-
-    var doApplyScopeSync = function() {
-        if (activeUrl && activeUrl !== "") {
-            updateTVState({
-                action: 'play',
-                url: activeUrl
-            });
-        } else {
-            updateUIStateForCurrentScope();
-        }
-    };
-
-    if (isAnyTvPlaying || (activeUrl && activeUrl !== "")) {
-        showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doApplyScopeSync);
-    } else {
-        doApplyScopeSync();
-    }
+    updateUIStateForCurrentScope();
 }
 
 function updateScopeButtonsUI() {
@@ -347,8 +319,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+var isUserDraggingSlider = false;
+var currentDragSourceTvId = null;
+
 // Fiziksel Paddock Bar 7 TV Matrix Layout Render (Sol Bar: TV 1..4 - Sağ Bar: TV 5..7)
 function renderTvMatrix() {
+    if (isUserDraggingSlider) return;
     var leftContainer = document.getElementById('cards-row-left');
     var rightContainer = document.getElementById('cards-row-right');
     if (!leftContainer || !rightContainer) return;
@@ -408,9 +384,14 @@ function createTvCard(tvId) {
     card.innerHTML = `
         <div class="tv-card-header">
             <span class="tv-card-title"><i class="fa-solid fa-tv"></i> TV #${tvId}</span>
-            <span class="tv-status-badge ${badgeClass}">
-                <span class="status-dot ${dotClass}"></span> ${statusText}
-            </span>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <button class="tv-card-btn-broadcast" data-tvid="${tvId}" title="Broadcast TV #${tvId} stream to all 7 TVs">
+                    <i class="fa-solid fa-tower-broadcast"></i>
+                </button>
+                <span class="tv-status-badge ${badgeClass}">
+                    <span class="status-dot ${dotClass}"></span> ${statusText}
+                </span>
+            </div>
         </div>
         <div class="tv-card-preview-frame">
             ${previewHtml}
@@ -422,9 +403,23 @@ function createTvCard(tvId) {
         </div>
     `;
 
-    // Tıklama ile bu TV'yi odakla (Ses slider'ı tıklamaları haricinde)
+    var broadcastBtn = card.querySelector('.tv-card-btn-broadcast');
+    if (broadcastBtn) {
+        broadcastBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var sourceState = tvStatesMap[tvId];
+            var inputVal = document.getElementById('custom-url-input') ? document.getElementById('custom-url-input').value.trim() : "";
+            var activeUrl = (sourceState && sourceState.url && sourceState.url !== "") ? sourceState.url : inputVal;
+
+            if (!activeUrl || activeUrl === "") return;
+
+            showBroadcastModal(activeUrl, tvId, (sourceState && sourceState.time) ? sourceState.time : 0);
+        });
+    }
+
+    // Tıklama ile bu TV'yi odakla (Ses slider'ı & Broadcast tıklamaları haricinde)
     card.addEventListener('click', function(e) {
-        if (e.target.classList.contains('card-vol-slider')) return;
+        if (e.target.classList.contains('card-vol-slider') || e.target.closest('.tv-card-btn-broadcast')) return;
         currentScope = 'single';
         currentTvId = tvId;
         currentGroupId = (tvId >= 5 && tvId <= 7) ? 2 : 1;
@@ -433,64 +428,79 @@ function createTvCard(tvId) {
         updateUIStateForCurrentScope();
     });
 
-    // Drag & Drop Stream Sharing between TV Cards
-    card.setAttribute('draggable', 'true');
+    card.setAttribute('data-tvid', tvId);
 
-    card.addEventListener('dragstart', function(e) {
-        e.dataTransfer.setData('text/plain', tvId);
-        e.dataTransfer.effectAllowed = 'copy';
-        card.classList.add('dragging');
-    });
+    // Custom Pointer Drag & Drop Stream Sharing via TV Preview Thumbnail (FiveM CEF NUI Bulletproof)
+    var previewFrame = card.querySelector('.tv-card-preview-frame');
+    if (previewFrame) {
+        previewFrame.style.cursor = 'grab';
+        previewFrame.setAttribute('title', 'Drag preview feed to copy stream to another TV');
 
-    card.addEventListener('dragend', function() {
-        card.classList.remove('dragging');
-        document.querySelectorAll('.tv-card').forEach(function(c) {
-            c.classList.remove('drag-hover');
-        });
-    });
+        previewFrame.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return; // Sol tık kontrolü
+            var sourceState = tvStatesMap[tvId];
+            if (!sourceState || !sourceState.url || sourceState.url === "") return;
 
-    card.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-        card.classList.add('drag-hover');
-    });
+            e.preventDefault();
+            e.stopPropagation();
+            currentDragSourceTvId = tvId;
 
-    card.addEventListener('dragleave', function() {
-        card.classList.remove('drag-hover');
-    });
-
-    card.addEventListener('drop', function(e) {
-        e.preventDefault();
-        card.classList.remove('drag-hover');
-        card.classList.remove('dragging');
-
-        var sourceTvId = parseInt(e.dataTransfer.getData('text/plain'));
-        if (sourceTvId && sourceTvId !== tvId) {
-            var sourceState = tvStatesMap[sourceTvId];
-            if (sourceState && sourceState.url && sourceState.url !== "") {
-                updateTVState({
-                    targetScope: 'single',
-                    tvId: tvId,
-                    action: 'play',
-                    url: sourceState.url,
-                    time: sourceState.time || 0,
-                    volume: sourceState.volume || 30
-                });
+            var ghost = document.getElementById('drag-ghost');
+            if (!ghost) {
+                ghost = document.createElement('div');
+                ghost.id = 'drag-ghost';
+                ghost.className = 'drag-ghost-floating';
+                document.body.appendChild(ghost);
             }
-        }
-    });
+
+            var videoId = getYoutubeId(sourceState.url);
+            var thumbHtml = "";
+            if (sourceState.url === "weather_channel") {
+                thumbHtml = `<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:10px; font-weight:800; color:#d2b78d; background:#121624;"><i class="fa-solid fa-cloud-sun" style="margin-right:4px;"></i> RS WEATHER</div>`;
+            } else if (sourceState.url === "rs_radio_channel") {
+                thumbHtml = `<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:10px; font-weight:800; color:#a78bfa; background:#1a102b;"><i class="fa-solid fa-radio" style="margin-right:4px;"></i> RS RADIO</div>`;
+            } else if (videoId) {
+                thumbHtml = `<img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+                thumbHtml = `<div style="display:flex; align-items:center; justify-content:center; height:100%; font-size:10px; font-weight:800; color:#d2b78d; background:#16161e;">TV #${tvId} STREAM</div>`;
+            }
+
+            ghost.innerHTML = `
+                <div class="ghost-header"><i class="fa-solid fa-tower-broadcast"></i> COPYING TV #${tvId}</div>
+                <div class="ghost-body">${thumbHtml}</div>
+            `;
+            ghost.style.display = 'block';
+            ghost.style.left = (e.clientX + 12) + 'px';
+            ghost.style.top = (e.clientY + 12) + 'px';
+
+            card.classList.add('dragging');
+        });
+    }
 
     // Kart içi bağımsız TV Ses Slider Dinleyicisi
     var slider = card.querySelector('.card-vol-slider');
     var textVal = card.querySelector('.card-vol-text');
     if (slider) {
         slider.addEventListener('click', function(e) { e.stopPropagation(); });
+        slider.addEventListener('mousedown', function() { isUserDraggingSlider = true; });
+        slider.addEventListener('touchstart', function() { isUserDraggingSlider = true; });
+
         slider.addEventListener('input', function(e) {
             e.stopPropagation();
+            isUserDraggingSlider = true;
             var val = parseInt(slider.value);
+            if (isNaN(val)) val = 0;
             if (textVal) textVal.innerText = val + '%';
             if (tvStatesMap[tvId]) tvStatesMap[tvId].volume = val;
             
+            // Eğer bu kart o an odaklanılmış TV ise sağ taraf paneli de eşzamanlı güncelle
+            if (tvId === currentTvId) {
+                var sideSlider = document.getElementById('volume-slider');
+                var sideBadge = document.getElementById('volume-val');
+                if (sideSlider) sideSlider.value = val;
+                if (sideBadge) sideBadge.innerText = val + '%';
+            }
+
             clearTimeout(volumeTimeout);
             volumeTimeout = setTimeout(function() {
                 updateTVState({
@@ -499,7 +509,7 @@ function createTvCard(tvId) {
                     action: 'volume',
                     volume: val
                 });
-            }, 150);
+            }, 120);
         });
     }
 
@@ -522,6 +532,13 @@ function updateUIStateForCurrentScope() {
 
     document.getElementById('scope-tag').innerText = scopeTagText;
     document.getElementById('preview-monitor-label').innerHTML = `<i class="fa-solid fa-tv"></i> PROGRAM MONITOR — FOCUSED: TV #${currentTvId}`;
+
+    // Update Right Panel Volume Slider to current focused TV's volume
+    var focusedVol = (state.volume !== undefined) ? state.volume : 30;
+    var sideSlider = document.getElementById('volume-slider');
+    var sideBadge = document.getElementById('volume-val');
+    if (sideSlider) sideSlider.value = focusedVol;
+    if (sideBadge) sideBadge.innerText = focusedVol + '%';
 
     // Monitor Preview & Input Updates
     var iframe = document.getElementById('preview-iframe');
@@ -624,8 +641,9 @@ function updateUIStateForCurrentScope() {
 
     var volumeSlider = document.getElementById('volume-slider');
     if (volumeSlider) {
-        volumeSlider.value = state.volume || 30;
-        document.getElementById('volume-val').innerText = (state.volume || 30) + '%';
+        var vVal = (state.volume !== undefined) ? state.volume : 30;
+        volumeSlider.value = vVal;
+        document.getElementById('volume-val').innerText = vVal + '%';
     }
 }
 
@@ -724,20 +742,118 @@ document.getElementById('action-stop').addEventListener('click', function() {
     }
 });
 
+var pendingBroadcastData = null;
+
+function showBroadcastModal(url, sourceTvId, startTime) {
+    pendingBroadcastData = {
+        url: url,
+        sourceTvId: sourceTvId,
+        time: startTime || 0
+    };
+    var modal = document.getElementById('broadcast-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function hideBroadcastModal() {
+    pendingBroadcastData = null;
+    var modal = document.getElementById('broadcast-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+var bCancelBtn = document.getElementById('broadcast-btn-cancel');
+if (bCancelBtn) bCancelBtn.addEventListener('click', hideBroadcastModal);
+
+document.querySelectorAll('.btn-target-choice').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var targetScope = btn.getAttribute('data-targetscope');
+        if (!pendingBroadcastData || !pendingBroadcastData.url) {
+            hideBroadcastModal();
+            return;
+        }
+
+        var bData = pendingBroadcastData;
+        hideBroadcastModal();
+
+        var gId = 1;
+        if (targetScope === 'g1') {
+            targetScope = 'group';
+            gId = 1;
+        } else if (targetScope === 'g2') {
+            targetScope = 'group';
+            gId = 2;
+        } else {
+            targetScope = 'all';
+            gId = 1;
+        }
+
+        var doExecuteBroadcast = function() {
+            currentScope = targetScope;
+            currentGroupId = gId;
+            updateScopeButtonsUI();
+            updateTVState({
+                targetScope: targetScope,
+                groupId: gId,
+                action: 'play',
+                url: bData.url,
+                time: bData.time
+            });
+        };
+
+        if (enableOverwriteConfirmation) {
+            showConfirmationModal('ui_confirm_title', 'ui_confirm_desc', doExecuteBroadcast);
+        } else {
+            doExecuteBroadcast();
+        }
+    });
+});
+
+var syncTvBtn = document.getElementById('action-sync-tv');
+if (syncTvBtn) {
+    syncTvBtn.addEventListener('click', function() {
+        var state = tvStatesMap[currentTvId];
+        var inputVal = document.getElementById('custom-url-input') ? document.getElementById('custom-url-input').value.trim() : "";
+        var activeUrl = (state && state.url && state.url !== "") ? state.url : inputVal;
+
+        if (!activeUrl || activeUrl === "") return;
+
+        showBroadcastModal(activeUrl, currentTvId, state ? state.time : 0);
+    });
+}
+
 // Ses Ayarı (Throttled)
 var volumeTimeout;
 var volumeSlider = document.getElementById('volume-slider');
-volumeSlider.addEventListener('input', function() {
-    var val = volumeSlider.value;
-    document.getElementById('volume-val').innerText = val + '%';
-    
-    clearTimeout(volumeTimeout);
-    volumeTimeout = setTimeout(function() {
-        updateTVState({
-            action: 'volume',
-            volume: parseInt(val)
-        });
-    }, 150);
+if (volumeSlider) {
+    volumeSlider.addEventListener('input', function() {
+        var val = parseInt(volumeSlider.value);
+        if (isNaN(val)) val = 0;
+        document.getElementById('volume-val').innerText = val + '%';
+        
+        clearTimeout(volumeTimeout);
+        volumeTimeout = setTimeout(function() {
+            updateTVState({
+                action: 'volume',
+                volume: val
+            });
+        }, 120);
+    });
+}
+
+document.querySelectorAll('.btn-vol-preset').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var targetVol = parseInt(btn.getAttribute('data-vol'));
+        if (!isNaN(targetVol)) {
+            var slider = document.getElementById('volume-slider');
+            var valBadge = document.getElementById('volume-val');
+            if (slider) slider.value = targetVol;
+            if (valBadge) valBadge.innerText = targetVol + '%';
+
+            updateTVState({
+                action: 'volume',
+                volume: targetVol
+            });
+        }
+    });
 });
 
 // Sunucuya Durum Güncelleme İsteği Gönderme / Web İnceleme Fallback
@@ -751,6 +867,37 @@ function updateTVState(data) {
     data.groupId = currentGroupId;
     data.locationKey = currentLocationKey;
 
+    var targetTvIds = [];
+    if (currentScope === 'all') {
+        targetTvIds = [1, 2, 3, 4, 5, 6, 7];
+    } else if (currentScope === 'group') {
+        targetTvIds = (currentGroupId === 1) ? [1, 2, 3, 4] : [5, 6, 7];
+    } else {
+        targetTvIds = [currentTvId];
+    }
+
+    targetTvIds.forEach(function(tId) {
+        if (!tvStatesMap[tId]) tvStatesMap[tId] = { url: "", playing: false, time: 0, volume: 30 };
+        if (data.action === 'play') {
+            tvStatesMap[tId].url = data.url;
+            tvStatesMap[tId].playing = true;
+        } else if (data.action === 'stop') {
+            tvStatesMap[tId].url = "";
+            tvStatesMap[tId].playing = false;
+        } else if (data.action === 'pause') {
+            tvStatesMap[tId].playing = false;
+        } else if (data.action === 'resume') {
+            tvStatesMap[tId].playing = true;
+        } else if (data.action === 'volume') {
+            tvStatesMap[tId].volume = parseInt(data.volume) !== undefined && !isNaN(parseInt(data.volume)) ? parseInt(data.volume) : 0;
+        }
+    });
+
+    if (!isUserDraggingSlider) {
+        renderTvMatrix();
+        updateUIStateForCurrentScope();
+    }
+
     if (typeof GetParentResourceName !== 'undefined') {
         fetch(`https://${GetParentResourceName()}/updateState`, {
             method: 'POST',
@@ -761,33 +908,80 @@ function updateTVState(data) {
         });
     } else {
         console.log("[Web Master Control Action]:", data);
-        var targetTvIds = [];
-        if (currentScope === 'all') {
-            targetTvIds = [1, 2, 3, 4, 5, 6, 7];
-        } else if (currentScope === 'group') {
-            targetTvIds = (currentGroupId === 1) ? [1, 2, 3, 4] : [5, 6, 7];
-        } else {
-            targetTvIds = [currentTvId];
-        }
+    }
+}
 
-        targetTvIds.forEach(function(tId) {
-            if (!tvStatesMap[tId]) tvStatesMap[tId] = { url: "", playing: false, time: 0, volume: 30 };
-            if (data.action === 'play') {
-                tvStatesMap[tId].url = data.url;
-                tvStatesMap[tId].playing = true;
-            } else if (data.action === 'stop') {
-                tvStatesMap[tId].url = "";
-                tvStatesMap[tId].playing = false;
-            } else if (data.action === 'pause') {
-                tvStatesMap[tId].playing = false;
-            } else if (data.action === 'resume') {
-                tvStatesMap[tId].playing = true;
-            } else if (data.action === 'volume') {
-                tvStatesMap[tId].volume = data.volume;
-            }
+// Custom Mouse Drag Tracking for FiveM CEF NUI
+window.addEventListener('mousemove', function(e) {
+    if (!currentDragSourceTvId) return;
+
+    var ghost = document.getElementById('drag-ghost');
+    if (ghost) {
+        ghost.style.left = (e.clientX + 12) + 'px';
+        ghost.style.top = (e.clientY + 12) + 'px';
+    }
+
+    var hoveredEl = document.elementFromPoint(e.clientX, e.clientY);
+    var hoveredCard = hoveredEl ? hoveredEl.closest('.tv-card') : null;
+
+    document.querySelectorAll('.tv-card').forEach(function(c) {
+        c.classList.remove('drag-hover');
+    });
+
+    if (hoveredCard) {
+        var targetTvId = parseInt(hoveredCard.getAttribute('data-tvid'));
+        if (targetTvId && targetTvId !== currentDragSourceTvId) {
+            hoveredCard.classList.add('drag-hover');
+        }
+    }
+});
+
+// Global Window Mouse Up Listener to release custom drag and slider drag cleanly
+window.addEventListener('mouseup', function(e) {
+    if (currentDragSourceTvId) {
+        var sourceTvId = currentDragSourceTvId;
+        currentDragSourceTvId = null;
+
+        var ghost = document.getElementById('drag-ghost');
+        if (ghost) ghost.style.display = 'none';
+
+        document.querySelectorAll('.tv-card').forEach(function(c) {
+            c.classList.remove('dragging');
+            c.classList.remove('drag-hover');
         });
 
+        var droppedEl = document.elementFromPoint(e.clientX, e.clientY);
+        var targetCard = droppedEl ? droppedEl.closest('.tv-card') : null;
+
+        if (targetCard) {
+            var targetTvId = parseInt(targetCard.getAttribute('data-tvid'));
+            if (targetTvId && targetTvId !== sourceTvId) {
+                var sourceState = tvStatesMap[sourceTvId];
+                if (sourceState && sourceState.url && sourceState.url !== "") {
+                    updateTVState({
+                        targetScope: 'single',
+                        tvId: targetTvId,
+                        action: 'play',
+                        url: sourceState.url,
+                        time: sourceState.time || 0,
+                        volume: (sourceState.volume !== undefined ? sourceState.volume : 30)
+                    });
+                }
+            }
+        }
+    }
+
+    if (isUserDraggingSlider) {
+        isUserDraggingSlider = false;
         renderTvMatrix();
         updateUIStateForCurrentScope();
     }
-}
+});
+
+window.addEventListener('touchend', function() {
+    if (isUserDraggingSlider) {
+        isUserDraggingSlider = false;
+        renderTvMatrix();
+        updateUIStateForCurrentScope();
+    }
+});

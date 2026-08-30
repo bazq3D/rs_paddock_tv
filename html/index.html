@@ -104,6 +104,9 @@
                             <button id="action-radio" class="btn-action btn-radio">
                                 <i class="fa-solid fa-radio"></i> <span id="btn-radio-text">RS RADIO BGM</span>
                             </button>
+                            <button id="action-sync-tv" class="btn-action btn-sync">
+                                <i class="fa-solid fa-tower-broadcast"></i> <span id="btn-sync-text">BROADCAST STREAM</span>
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -138,6 +141,13 @@
                             <input type="range" id="volume-slider" min="0" max="100" value="30">
                             <i class="fa-solid fa-volume-high"></i>
                         </div>
+                        <div class="vol-presets-row">
+                            <button class="btn-vol-preset" data-vol="0"><i class="fa-solid fa-volume-xmark"></i> MUTE</button>
+                            <button class="btn-vol-preset" data-vol="25">25%</button>
+                            <button class="btn-vol-preset" data-vol="50">50%</button>
+                            <button class="btn-vol-preset" data-vol="75">75%</button>
+                            <button class="btn-vol-preset" data-vol="100">100%</button>
+                        </div>
                     </div>
 
                     <!-- Interior Details Card -->
@@ -156,6 +166,45 @@
                     </div>
                 </section>
             </main>
+        </div>
+    </div>
+
+    <!-- Broadcast Target Selector Modal Overlay -->
+    <div class="modal-overlay" id="broadcast-modal" style="display: none;">
+        <div class="modal-card broadcast-modal-card">
+            <div class="modal-header">
+                <i class="fa-solid fa-tower-broadcast text-gold"></i>
+                <h3>SELECT BROADCAST TARGET</h3>
+            </div>
+            <div class="modal-body">
+                <p>Choose where to broadcast the selected video stream:</p>
+                <div class="broadcast-target-options">
+                    <button class="btn-target-choice" data-targetscope="all">
+                        <i class="fa-solid fa-globe text-gold"></i>
+                        <div class="target-choice-text">
+                            <strong>SYNC ALL 7 TVs</strong>
+                            <span>Broadcast stream across all 7 venue screens</span>
+                        </div>
+                    </button>
+                    <button class="btn-target-choice" data-targetscope="g1">
+                        <i class="fa-solid fa-layer-group text-blue"></i>
+                        <div class="target-choice-text">
+                            <strong>LEFT BAR (TV 1-4)</strong>
+                            <span>Broadcast stream to Left Bar screens only</span>
+                        </div>
+                    </button>
+                    <button class="btn-target-choice" data-targetscope="g2">
+                        <i class="fa-solid fa-layer-group text-amber"></i>
+                        <div class="target-choice-text">
+                            <strong>RIGHT BAR (TV 5-7)</strong>
+                            <span>Broadcast stream to Right Bar screens only</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-action" id="broadcast-btn-cancel">CANCEL</button>
+            </div>
         </div>
     </div>
 

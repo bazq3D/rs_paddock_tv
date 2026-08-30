@@ -124,7 +124,16 @@ local function GetOrCreateSharedDui(streamKey, streamUrl, streamTime)
         duiUrl = ("https://cfx-nui-%s/html/radio_channel/index.html"):format(resourceName)
         streamType = "rs_radio_channel"
     else
-        duiUrl = ("https://cfx-nui-%s/html/tv.html?resource=%s"):format(resourceName, resourceName)
+        local scale = Config.VideoScale or {}
+        local sMode = scale.mode or 'exact'
+        local sW = scale.width or 100
+        local sH = scale.height or 100
+        local sT = scale.top or 0
+        local sL = scale.left or 0
+
+        duiUrl = ("https://cfx-nui-%s/html/tv.html?resource=%s&scaleMode=%s&scaleW=%s&scaleH=%s&scaleT=%s&scaleL=%s"):format(
+            resourceName, resourceName, sMode, tostring(sW), tostring(sH), tostring(sT), tostring(sL)
+        )
         streamType = "youtube"
     end
 
@@ -169,14 +178,23 @@ end
 local function CleanUnusedSharedDuis()
     local inUseKeys = {}
     for tvId, key in pairs(activeTvDuiKeys) do
-        inUseKeys[key] = true
+        if key then
+            inUseKeys[key] = true
+        end
     end
 
     for key, instance in pairs(sharedDuis) do
         if not inUseKeys[key] then
             dbg(("Destroying unused shared DUI instance [Key: %s]"):format(key))
-            if instance.duiObject then
-                DestroyDui(instance.duiObject)
+            if instance and instance.duiObject then
+                local dui = instance.duiObject
+                pcall(function()
+                    SendDuiMessage(dui, json.encode({ action = 'stop' }))
+                    SetDuiURL(dui, "about:blank")
+                end)
+                Citizen.SetTimeout(150, function()
+                    pcall(function() DestroyDui(dui) end)
+                end)
             end
             sharedDuis[key] = nil
         end
@@ -235,25 +253,46 @@ end)
 
 -- Restore original texture when TV is turned off
 local function RestoreTVTexture(tvId)
-    if not duiInstancesIsReplaced[tvId] then return end
+    local oldKey = activeTvDuiKeys[tvId]
 
-    local tvConfig = Config.TVs[tvId]
-    if not tvConfig then return end
+    if duiInstancesIsReplaced[tvId] then
+        local tvConfig = Config.TVs[tvId]
+        if tvConfig then
+            local targetTxd = tvConfig.txd or "rs_paddock_tvapp_txd"
+            local targetTxn = tvConfig.txn or ("rs_paddock_tvapp%d"):format(tvId)
 
-    local targetTxd = tvConfig.txd or "rs_paddock_tvapp_txd"
-    local targetTxn = tvConfig.txn or ("rs_paddock_tvapp%d"):format(tvId)
+            RemoveReplaceTexture(targetTxd, targetTxn)
+            RemoveReplaceTexture(targetTxd, tvConfig.model or ("rs_paddock_tv_app%d"):format(tvId))
 
-    RemoveReplaceTexture(targetTxd, targetTxn)
-    RemoveReplaceTexture(targetTxd, tvConfig.model or ("rs_paddock_tv_app%d"):format(tvId))
-
-    if tvConfig.model then
-        RemoveReplaceTexture(tvConfig.model, targetTxn)
-        RemoveReplaceTexture(tvConfig.model, tvConfig.model)
+            if tvConfig.model then
+                RemoveReplaceTexture(tvConfig.model, targetTxn)
+                RemoveReplaceTexture(tvConfig.model, tvConfig.model)
+            end
+        end
     end
 
     activeTvDuiKeys[tvId] = nil
     duiInstancesIsReplaced[tvId] = false
     dbg(("Texture restored [TV #%d]"):format(tvId))
+
+    -- Check if any other TV is still actively playing this shared stream
+    local isOldKeyStillInUse = false
+    if oldKey then
+        for otherTvId = 1, 7 do
+            if activeTvDuiKeys[otherTvId] == oldKey then
+                isOldKeyStillInUse = true
+                break
+            end
+        end
+    end
+
+    -- Only kill/stop shared DUI browser if NO OTHER TV is still playing this stream
+    if oldKey and not isOldKeyStillInUse and sharedDuis[oldKey] and sharedDuis[oldKey].duiObject then
+        pcall(function()
+            SendDuiMessage(sharedDuis[oldKey].duiObject, json.encode({ action = 'stop' }))
+            SetDuiURL(sharedDuis[oldKey].duiObject, "about:blank")
+        end)
+    end
 
     CleanUnusedSharedDuis()
 end
@@ -367,13 +406,20 @@ Citizen.CreateThread(function()
 
                     if isMasterForAudio then
                         local volPercent = 0
-                        local maxDist = (Config.MaxRenderDistance or 35.0) + 15.0
-                        if distance <= maxDist then
-                            local progress = distance / maxDist
-                            local volumeMultiplier = math.max(0.35, 1.0 - (progress * 0.5))
-                            volPercent = math.floor((state.volume or 100) * volumeMultiplier)
-                            if volPercent > 100 then volPercent = 100 end
-                            if volPercent < 15 then volPercent = 15 end
+                        local userVol = state.volume
+                        if userVol == nil then userVol = Config.DefaultVolume or 30 end
+
+                        if userVol > 0 then
+                            local maxDist = (Config.MaxRenderDistance or 35.0) + 15.0
+                            if distance <= maxDist then
+                                local progress = distance / maxDist
+                                local volumeMultiplier = math.max(0.20, 1.0 - (progress * 0.5))
+                                volPercent = math.floor(userVol * volumeMultiplier)
+                                if volPercent > 100 then volPercent = 100 end
+                                if volPercent < 0 then volPercent = 0 end
+                            end
+                        else
+                            volPercent = 0
                         end
 
                         local streamKey = GetStreamKey(state.url, state.time)

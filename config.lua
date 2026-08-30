@@ -3,7 +3,7 @@ Config = {}
 -- =============================================================================
 -- 1. GENERAL & LANGUAGE SETTINGS
 -- =============================================================================
-Config.Debug = true                     -- Enable console debug prints (dbg() helper)
+Config.Debug = false                     -- Enable console debug prints (dbg() helper)
 Config.Locale = 'en'                    -- Active language: 'en', 'tr', 'de', 'es', 'fr', 'pt', 'it' (Default: 'en')
 Config.EnableOverwriteConfirmation = true -- Prompt overwrite confirmation dialog when changing an active stream (default: true)
 
@@ -144,6 +144,18 @@ Config.MuteDuplicateAudio = true        -- Automatically mute duplicate audio wh
 Config.DefaultUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 Config.DuiWidth = 1280                  -- DUI resolution width
 Config.DuiHeight = 720                  -- DUI resolution height
+
+-- =============================================================================
+-- 4.1 VIDEO SCREEN SCALE & FIT SETTINGS
+-- =============================================================================
+Config.VideoScale = {
+    -- Scale Mode: 'exact' (100% full fit, zero crop), 'crop' (light zoom), 'custom'
+    mode = 'exact',
+    width = 100,      -- Custom width percentage (100 = 100% fit)
+    height = 100,     -- Custom height percentage (100 = 100% fit)
+    top = 0,          -- Top offset percentage (0 = centered)
+    left = 0          -- Left offset percentage (0 = centered)
+}
 
 -- =============================================================================
 -- 5. PADDOCK MAP LOCATIONS (5 MLO COORDINATES)

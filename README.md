@@ -2,6 +2,8 @@
 
 Multi-Screen Independent YouTube DUI Sync TV System created for Paddock MLO maps in FiveM.
 
+🔗 **GitHub Repository:** [https://github.com/bazq3D/rs_paddock_tv](https://github.com/bazq3D/rs_paddock_tv)
+
 ---
 
 ## 🌟 Features
@@ -26,10 +28,10 @@ Multi-Screen Independent YouTube DUI Sync TV System created for Paddock MLO maps
 
 ## 📥 Installation
 
-1. Download or clone `rs_paddock_tv` into your FiveM server resources folder:
+1. Download or clone `rs_paddock_tv` from [https://github.com/bazq3D/rs_paddock_tv](https://github.com/bazq3D/rs_paddock_tv) into your FiveM server resources folder:
 
-   ```text
-   resources/[retrostore]/rs_paddock_tv
+   ```bash
+   git clone https://github.com/bazq3D/rs_paddock_tv.git resources/[retrostore]/rs_paddock_tv
    ```
 
 2. Ensure the resource in your `server.cfg`:

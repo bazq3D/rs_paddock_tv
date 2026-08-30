@@ -22,15 +22,16 @@
         }
         .tv-video iframe {
             position: absolute;
-            top: -14%;
-            left: -14%;
-            width: 128% !important;
-            height: 128% !important;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
             border: 0;
             outline: 0;
             pointer-events: none;
             user-select: none;
             -webkit-user-select: none;
+            object-fit: cover;
         }
         /* Black overlay to mask the initial 1.4s YouTube title card load flash */
         #black-overlay {

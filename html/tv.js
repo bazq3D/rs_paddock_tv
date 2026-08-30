@@ -11,12 +11,54 @@ var resourceName = "rs_paddock_tv";
     } catch(e) {}
 })();
 
+function applyIframeScale(scaleData) {
+    var iframe = document.getElementById("yt");
+    if (!iframe) return;
+
+    var mode = scaleData ? scaleData.mode : 'exact';
+    var w = 100;
+    var h = 100;
+    var t = 0;
+    var l = 0;
+
+    if (mode === 'crop') {
+        w = 106;
+        h = 106;
+        t = -3;
+        l = -3;
+    } else if (mode === 'custom' && scaleData) {
+        w = scaleData.width !== undefined ? scaleData.width : 100;
+        h = scaleData.height !== undefined ? scaleData.height : 100;
+        t = scaleData.top !== undefined ? scaleData.top : 0;
+        l = scaleData.left !== undefined ? scaleData.left : 0;
+    }
+
+    iframe.style.width = w + "%";
+    iframe.style.height = h + "%";
+    iframe.style.top = t + "%";
+    iframe.style.left = l + "%";
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     try {
         var params = new URLSearchParams(window.location.search);
         var urlParam = params.get('url');
         var timeParam = params.get('time');
         var volParam = params.get('volume');
+
+        var scaleMode = params.get('scaleMode') || 'exact';
+        var scaleW = parseFloat(params.get('scaleW')) || 100;
+        var scaleH = parseFloat(params.get('scaleH')) || 100;
+        var scaleT = parseFloat(params.get('scaleT')) || 0;
+        var scaleL = parseFloat(params.get('scaleL')) || 0;
+
+        applyIframeScale({
+            mode: scaleMode,
+            width: scaleW,
+            height: scaleH,
+            top: scaleT,
+            left: scaleL
+        });
 
         if (urlParam) {
             var vId = youtubeVideoId(urlParam);
@@ -116,6 +158,9 @@ window.addEventListener("message", function(event) {
     if (!data || !data.action) return;
 
     if (data.action === "play") {
+        if (data.videoScale) {
+            applyIframeScale(data.videoScale);
+        }
         var vId = youtubeVideoId(data.url);
         if (!vId) return;
 
@@ -132,6 +177,10 @@ window.addEventListener("message", function(event) {
         }
     } else if (data.action === "stop") {
         currentVideoId = "";
+        try {
+            sendCommand("pauseVideo");
+            sendCommand("mute");
+        } catch(e) {}
         var iframe = document.getElementById("yt");
         if (iframe) iframe.src = "about:blank";
         var overlay = document.getElementById("black-overlay");
